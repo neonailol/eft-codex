@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.node.ShortNode
 import com.fasterxml.jackson.databind.node.TextNode
 import org.apache.commons.lang3.builder.ToStringBuilder
 import org.apache.commons.lang3.builder.ToStringStyle
+import org.apache.commons.text.WordUtils
 import kotlin.test.Test
 
 class AppTest {
@@ -44,14 +45,56 @@ class AppTest {
         val types = HashSet<String>()
         for (datum in data) {
             datum.fields().forEach {
-                val rootNode = context.addNode(Node("ItemTemplate", it.key, it.value))
+                val rootNode = context.addNode(Node("TestItemTemplates", it.key, it.value))
                 if (it.value.isContainerNode) {
                     putIntoContext(context, rootNode, it)
                 }
             }
         }
-        val pp = mapper.readValue(context.toString(), Any::class.java)
-        println(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(pp))
+//        val pp = mapper.readValue(context.toString(), Any::class.java)
+//        println(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(pp))
+        codeGeneration(context)
+    }
+
+    private fun codeGeneration(context: Context) {
+        context.nodes()
+            .asSequence()
+            .groupBy { it.prefix }
+            .toSortedMap()
+            .forEach { clazz, props ->
+                val builder = StringBuilder()
+                val clazzName =
+                    className(clazz)
+
+                builder.append("data class ${clazzName}(" + System.lineSeparator())
+                props.forEachIndexed { index, node ->
+
+                    val nodeType = if (node.typeString() == "Object") {
+                        className(node.prefix)
+                    } else {
+                        node.typeString()
+                    }
+
+                    val postfix = when (index) {
+                        props.size - 1 -> ""
+                        else -> "," + System.lineSeparator()
+                    }
+                    builder.append("    val ${node.name}: ${nodeType}?" + postfix)
+                }
+
+                builder.append(System.lineSeparator() + ")" + System.lineSeparator())
+                println(builder)
+            }
+    }
+
+    private fun className(clazz: String): String {
+        return clazz.split("#")
+            .asSequence()
+            .map { it.removePrefix("_") }
+            .map { it.replace("_", " ") }
+            .map { WordUtils.capitalize(it) }
+            .map { it.replace(" ", "") }
+            .joinToString("")
     }
 
     private fun putIntoContext(
@@ -73,7 +116,7 @@ class Context {
     private val nodes: MutableSet<Node> = mutableSetOf()
 
     fun addNode(node: Node): Node {
-        if (node.prefix == "ItemTemplate#_props" && node.name == "Buffs") {
+        if (node.prefix == "TestItemTemplates#_props" && node.name == "Buffs") {
             // Some weird stuff goes with buffs
             return node
         }
@@ -85,6 +128,10 @@ class Context {
                 }
         }
         return node
+    }
+
+    fun nodes(): Set<Node> {
+        return HashSet(nodes)
     }
 
     override fun toString(): String {
@@ -123,28 +170,28 @@ data class Node(
 
     fun typeString(): String {
         return when (type.nodeType) {
-            ARRAY -> "array"
+            ARRAY -> "Collection"
             BINARY -> "binary"
-            BOOLEAN -> "boolean"
+            BOOLEAN -> "Boolean"
             MISSING -> "missing"
             NULL -> "null"
 
             NUMBER -> {
                 return when (type) {
-                    is ShortNode -> "ShortNode"
-                    is IntNode -> "IntNode"
-                    is LongNode -> "LongNode"
-                    is BigIntegerNode -> "BigIntegerNode"
-                    is FloatNode -> "FloatNode"
-                    is DoubleNode -> "DoubleNode"
-                    is DecimalNode -> "DecimalNode"
+                    is ShortNode -> "Short"
+                    is IntNode -> "Int"
+                    is LongNode -> "Long"
+                    is BigIntegerNode -> "BigInteger"
+                    is FloatNode -> "Float"
+                    is DoubleNode -> "Double"
+                    is DecimalNode -> "Decimal"
                     else -> throw RuntimeException("Unknown number node type")
                 }
             }
 
-            OBJECT -> "object"
+            OBJECT -> "Object"
             POJO -> "pojo"
-            STRING -> "string"
+            STRING -> "String"
         }
     }
 

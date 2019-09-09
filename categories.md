@@ -1,0 +1,55 @@
+
+```cmd
+jq -r "[.data | to_entries[] | {\"key\": .key, \"value\": .value.Name}] | from_entries" TextAsset\TestCategories.bytes
+```
+
+```json
+{
+  "54009119af1c881c07000029": "Item",
+  "543be5cb4bdc2deb348b4568": "Ammo",
+  "543be5f84bdc2dd4348b456a": "Equipment",
+  "5448e54d4bdc2dcc718b4568": "armor",
+  "5448e53e4bdc2d60728b4567": "backpack",
+  "5448e5284bdc2dcb718b4567": "vest",
+  "5448e5724bdc2ddf718b4568": "visors",
+  "543be6674bdc2df1348b4569": "FoodDrink",
+  "5448e8d64bdc2dce718b4568": "drink",
+  "5448e8d04bdc2ddf718b4569": "food",
+  "543be5e94bdc2df1348b4568": "Keys",
+  "543be5664bdc2dd4348b4569": "Meds",
+  "5448f3a14bdc2d27728b4569": "drugs",
+  "5448f39d4bdc2d0a728b4568": "medKits",
+  "5448f3ac4bdc2dce718b4569": "medical",
+  "5448f3a64bdc2d60728b456a": "stimulators",
+  "5448fe124bdc2da5018b4567": "Mods",
+  "550aa4154bdc2dd8348b456b": "functional",
+  "5448fe394bdc2d0d028b456c": "muzzleMod",
+  "550aa4af4bdc2dd4348b456e": "compensator",
+  "550aa4bf4bdc2dd6348b456b": "flashHider",
+  "550aa4dd4bdc2dc9348b4569": "muzzleCombo",
+  "550ad14d4bdc2dd5348b456c": "pms",
+  "550aa4cd4bdc2dd8348b456c": "silencer",
+  "5448fe7a4bdc2d6f028b456b": "sightMod",
+  "5448fe254bdc2d0d028b4569": "tacticalMod",
+  "5448feb34bdc2d0d028b456f": "underBarrelMod",
+  "543be5dd4bdc2deb348b4569": "Money",
+  "5422acb9af1c889c16000029": "Weapon",
+  "5447b5fc4bdc2d87278b4567": "assaultCarbine",
+  "5447b5f14bdc2d61278b4567": "assaultRifle",
+  "5447bedf4bdc2d87278b4568": "grenadeLauncher",
+  "5447bed64bdc2d97278b4568": "machinegun",
+  "5447b6194bdc2d67278b4567": "marksmanRifle",
+  "5447b5cf4bdc2d65278b4567": "pistol",
+  "5447b6094bdc2dc3278b4567": "shotgun",
+  "5447b5e04bdc2d62278b4567": "smg",
+  "5447b6254bdc2dc3278b4568": "sniperRifle",
+  "5447bee84bdc2dc3278b4569": "specialWeapon",
+  "5448eb774bdc2d0a728b4567": "barterItems",
+  "5448ecbe4bdc2d60728b4568": "info",
+  "5447e1d04bdc2dff2f8b4567": "knifes",
+  "5448bc234bdc2d3c308b4569": "magMod",
+  "5448bf274bdc2dfc2f8b456a": "mobContainers",
+  "5447e0e74bdc2d3c308b4567": "specItems",
+  "543be6564bdc2df4348b4568": "throwWeap"
+}
+```
