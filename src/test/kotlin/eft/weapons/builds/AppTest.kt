@@ -45,7 +45,7 @@ class AppTest {
         val types = HashSet<String>()
         for (datum in data) {
             datum.fields().forEach {
-                val rootNode = context.addNode(Node("TestItemTemplates", it.key, it.value))
+                val rootNode = context.addNode(Node("TestItemTemplatesItem", it.key, it.value))
                 if (it.value.isContainerNode) {
                     putIntoContext(context, rootNode, it)
                 }
@@ -69,10 +69,10 @@ class AppTest {
                 builder.append("data class ${clazzName}(" + System.lineSeparator())
                 props.forEachIndexed { index, node ->
 
-                    val nodeType = if (node.typeString() == "Object") {
-                        className(node.prefix)
-                    } else {
-                        node.typeString()
+                    val nodeType = when (node.typeString()) {
+                        "Object" -> className(node.prefix + node.name)
+                        "Collection" -> "Collection<${collectionClass(node)}>?"
+                        else -> node.typeString()
                     }
 
                     val postfix = when (index) {
@@ -85,6 +85,13 @@ class AppTest {
                 builder.append(System.lineSeparator() + ")" + System.lineSeparator())
                 println(builder)
             }
+    }
+
+    private fun collectionClass(node: Node): String {
+        if (node.childrenType() is TextNode) {
+            return "String"
+        }
+        return className(node.prefix + node.name)
     }
 
     private fun className(clazz: String): String {
@@ -116,17 +123,18 @@ class Context {
     private val nodes: MutableSet<Node> = mutableSetOf()
 
     fun addNode(node: Node): Node {
-        if (node.prefix == "TestItemTemplates#_props" && node.name == "Buffs") {
+        if (node.prefix == "TestItemTemplatesItem#_props" && node.name == "Buffs") {
             // Some weird stuff goes with buffs
             return node
         }
-        val addded = nodes.add(node)
-        if (addded.not()) {
-            nodes.filter { it.prefix == node.prefix && it.name == node.name }
-                .forEach {
-                    it.updateType(node)
-                }
+        if (node.name == "Grids") {
+            println(node)
         }
+        nodes.add(node)
+        nodes.filter { it.prefix == node.prefix && it.name == node.name }
+            .forEach {
+                it.updateType(node)
+            }
         return node
     }
 
@@ -149,6 +157,7 @@ data class Node(
 ) {
 
     fun updateType(node: Node) {
+        // Check children
         if (type.javaClass != node.type.javaClass) {
             if (type.javaClass == IntNode::class.java && node.type.javaClass == DoubleNode::class.java) {
                 type = node.type
@@ -193,6 +202,11 @@ data class Node(
             POJO -> "pojo"
             STRING -> "String"
         }
+    }
+
+    fun childrenType(): JsonNode {
+        val arrayNode = type as ArrayNode
+        return arrayNode.elements().asSequence().first()
     }
 
     override fun equals(other: Any?): Boolean {
