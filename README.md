@@ -1,1 +1,1 @@
-# eft-wepons-builds
+# eft-weapons-builds
