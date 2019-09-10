@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.node.TextNode
 import org.apache.commons.lang3.builder.ToStringBuilder
 import org.apache.commons.lang3.builder.ToStringStyle
 import org.apache.commons.text.WordUtils
+import kotlin.reflect.full.memberProperties
 import kotlin.test.Test
 
 class AppTest {
@@ -48,6 +49,28 @@ class AppTest {
             .filter { it._parent == "5447b6254bdc2dc3278b4568" }
             .map { it._name }
             .forEach { println(it) }
+    }
+
+    @Test
+    fun `can find all params of weapons`() {
+        val mapper = ObjectMapper().findAndRegisterModules().configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true)
+        val json = this.javaClass.getResourceAsStream("/TestItemTemplates.json")
+        var testItemTemplates = mapper.readValue(json, TestItemTemplates::class.java)
+        val validProps = mutableSetOf<String>()
+        val invalidProps = mutableSetOf<String>()
+        testItemTemplates.data.values.asSequence()
+            .filter { it._parent == "5447b6254bdc2dc3278b4568" }
+            .forEach {
+                for (memberProperty in TestItemTemplatesItemProps::class.memberProperties) {
+                    if (memberProperty.get(it?._props!!) != null) {
+                        validProps.add(memberProperty.name)
+                    } else {
+                        invalidProps.add(memberProperty.name)
+                    }
+                }
+            }
+        println(validProps)
+        println(invalidProps)
     }
 
     @Test
