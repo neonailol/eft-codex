@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ArrayNode
 import com.fasterxml.jackson.databind.node.BigIntegerNode
+import com.fasterxml.jackson.databind.node.ContainerNode
 import com.fasterxml.jackson.databind.node.DecimalNode
 import com.fasterxml.jackson.databind.node.DoubleNode
 import com.fasterxml.jackson.databind.node.FloatNode
@@ -57,6 +58,7 @@ class AppTest {
     }
 
     private fun codeGeneration(context: Context) {
+        println("package eft.weapons.builds" + System.lineSeparator())
         context.nodes()
             .asSequence()
             .groupBy { it.prefix }
@@ -70,8 +72,8 @@ class AppTest {
                 props.forEachIndexed { index, node ->
 
                     val nodeType = when (node.typeString()) {
-                        "Object" -> className(node.prefix + node.name)
-                        "Collection" -> "Collection<${collectionClass(node)}>?"
+                        "Object" -> className(node.prefix + "_" + node.name)
+                        "Collection" -> "Collection<${collectionClass(node)}>"
                         else -> node.typeString()
                     }
 
@@ -91,7 +93,7 @@ class AppTest {
         if (node.childrenType() is TextNode) {
             return "String"
         }
-        return className(node.prefix + node.name)
+        return className(node.prefix) + node.name.capitalize()
     }
 
     private fun className(clazz: String): String {
@@ -127,9 +129,6 @@ class Context {
             // Some weird stuff goes with buffs
             return node
         }
-        if (node.name == "Grids") {
-            println(node)
-        }
         nodes.add(node)
         nodes.filter { it.prefix == node.prefix && it.name == node.name }
             .forEach {
@@ -157,7 +156,21 @@ data class Node(
 ) {
 
     fun updateType(node: Node) {
-        // Check children
+        if (type.isArray) {
+            val current = childrenType()
+            val new = node.childrenType()
+            if (current?.javaClass != new?.javaClass) {
+
+                if (current?.javaClass == null) {
+                    type = node.type
+                } else if (new?.javaClass == null) {
+                    // skip
+                } else {
+                    throw RuntimeException()
+                }
+
+            }
+        }
         if (type.javaClass != node.type.javaClass) {
             if (type.javaClass == IntNode::class.java && node.type.javaClass == DoubleNode::class.java) {
                 type = node.type
@@ -204,9 +217,12 @@ data class Node(
         }
     }
 
-    fun childrenType(): JsonNode {
-        val arrayNode = type as ArrayNode
-        return arrayNode.elements().asSequence().first()
+    fun childrenType(): JsonNode? {
+        if (type.isContainerNode) {
+            val arrayNode = type as ContainerNode<*>?
+            return arrayNode?.elements()?.asSequence()?.firstOrNull()
+        }
+        return null
     }
 
     override fun equals(other: Any?): Boolean {
