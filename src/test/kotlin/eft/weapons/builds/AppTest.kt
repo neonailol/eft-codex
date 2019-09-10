@@ -40,6 +40,17 @@ class AppTest {
     }
 
     @Test
+    fun `can find all weapons`() {
+        val mapper = ObjectMapper().findAndRegisterModules().configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true)
+        val json = this.javaClass.getResourceAsStream("/TestItemTemplates.json")
+        var testItemTemplates = mapper.readValue(json, TestItemTemplates::class.java)
+        testItemTemplates.data.values.asSequence()
+            .filter { it._parent == "5447b6254bdc2dc3278b4568" }
+            .map { it._name }
+            .forEach { println(it) }
+    }
+
+    @Test
     fun `dynamic json schema detection`() {
         val mapper = ObjectMapper().findAndRegisterModules()
         val json = this.javaClass.getResourceAsStream("/TestItemTemplates.json")
