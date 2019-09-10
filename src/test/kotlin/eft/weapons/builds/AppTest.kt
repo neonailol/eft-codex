@@ -1,6 +1,7 @@
 package eft.weapons.builds
 
 import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.MapperFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ArrayNode
 import com.fasterxml.jackson.databind.node.BigIntegerNode
@@ -20,6 +21,8 @@ import com.fasterxml.jackson.databind.node.JsonNodeType.POJO
 import com.fasterxml.jackson.databind.node.JsonNodeType.STRING
 import com.fasterxml.jackson.databind.node.LongNode
 import com.fasterxml.jackson.databind.node.NullNode
+import com.fasterxml.jackson.databind.node.NumericNode
+import com.fasterxml.jackson.databind.node.ObjectNode
 import com.fasterxml.jackson.databind.node.ShortNode
 import com.fasterxml.jackson.databind.node.TextNode
 import org.apache.commons.lang3.builder.ToStringBuilder
@@ -31,7 +34,7 @@ class AppTest {
 
     @Test
     fun `can load some json`() {
-        val mapper = ObjectMapper().findAndRegisterModules()
+        val mapper = ObjectMapper().findAndRegisterModules().configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true)
         val json = this.javaClass.getResourceAsStream("/TestItemTemplates.json")
         var testItemTemplates = mapper.readValue(json, TestItemTemplates::class.java)
     }
@@ -59,6 +62,8 @@ class AppTest {
 
     private fun codeGeneration(context: Context) {
         println("package eft.weapons.builds" + System.lineSeparator())
+        println("import com.fasterxml.jackson.annotation.JsonProperty" + System.lineSeparator())
+        println("import com.fasterxml.jackson.annotation.JsonIgnoreProperties" + System.lineSeparator())
         context.nodes()
             .asSequence()
             .groupBy { it.prefix }
@@ -68,7 +73,11 @@ class AppTest {
                 val clazzName =
                     className(clazz)
 
-                builder.append("data class ${clazzName}(" + System.lineSeparator())
+                if (clazzName == "TestItemTemplatesItemProps") {
+                    builder.append("@JsonIgnoreProperties(\"Buffs\")" + System.lineSeparator())
+                }
+
+                builder.append("class ${clazzName} {" + System.lineSeparator())
                 props.forEachIndexed { index, node ->
 
                     val nodeType = when (node.typeString()) {
@@ -77,20 +86,31 @@ class AppTest {
                         else -> node.typeString()
                     }
 
-                    val postfix = when (index) {
-                        props.size - 1 -> ""
-                        else -> "," + System.lineSeparator()
+                    if (node.name != "Buffs") {
+                        val postfix = when (index) {
+                            props.size - 1 -> ""
+                            else -> "" + System.lineSeparator()
+                        }
+                        if (nodeType == "Boolean") {
+                            builder.append("    @JsonProperty(\"${node.name}\")" + System.lineSeparator())
+                        }
+                        builder.append("    var ${node.name}: ${nodeType}? = null" + postfix)
                     }
-                    builder.append("    val ${node.name}: ${nodeType}?" + postfix)
                 }
 
-                builder.append(System.lineSeparator() + ")" + System.lineSeparator())
+                builder.append(System.lineSeparator() + "}" + System.lineSeparator())
                 println(builder)
             }
     }
 
     private fun collectionClass(node: Node): String {
         if (node.childrenType() is TextNode) {
+            return "String"
+        }
+        if (node.childrenType() is NumericNode) {
+            return "Long"
+        }
+        if (node.childrenType() == null) {
             return "String"
         }
         return className(node.prefix) + node.name.capitalize()
@@ -109,12 +129,23 @@ class AppTest {
     private fun putIntoContext(
         context: Context,
         rootNode: Node,
-        entry: MutableMap.MutableEntry<String, JsonNode>
+        entry: Map.Entry<String, JsonNode>
     ) {
         entry.value.fields().forEach {
             val node = context.addNode(Node(rootNode.prefix + "#" + rootNode.name, it.key, it.value))
             if (it.value.isContainerNode) {
-                putIntoContext(context, node, it)
+                if (it.value.isObject) {
+                    putIntoContext(context, node, it)
+                } else if (it.value.isArray) {
+                    it.value.iterator().forEach { child ->
+                        putIntoContext(context, node, object : Map.Entry<String, JsonNode> {
+                            override val key: String
+                                get() = node.name
+                            override val value: JsonNode
+                                get() = child
+                        })
+                    }
+                }
             }
         }
     }
@@ -125,10 +156,6 @@ class Context {
     private val nodes: MutableSet<Node> = mutableSetOf()
 
     fun addNode(node: Node): Node {
-        if (node.prefix == "TestItemTemplatesItem#_props" && node.name == "Buffs") {
-            // Some weird stuff goes with buffs
-            return node
-        }
         nodes.add(node)
         nodes.filter { it.prefix == node.prefix && it.name == node.name }
             .forEach {
@@ -182,6 +209,9 @@ data class Node(
             if (type.javaClass == ArrayNode::class.java && node.type.javaClass == NullNode::class.java) {
                 return
             }
+            if (type.javaClass == ArrayNode::class.java && node.type.javaClass == ObjectNode::class.java) {
+                return
+            }
             if (type.javaClass == IntNode::class.java && node.type.javaClass == TextNode::class.java) {
                 type = node.type
                 return
@@ -229,15 +259,15 @@ data class Node(
         if (this === other) return true
         if (other !is Node) return false
 
-        if (name != other.name) return false
-        if (prefix != other.prefix) return false
+        if (name.toLowerCase() != other.name.toLowerCase()) return false
+        if (prefix.toLowerCase() != other.prefix.toLowerCase()) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        var result = prefix.hashCode()
-        result = 31 * result + name.hashCode()
+        var result = prefix.toLowerCase().hashCode()
+        result = 31 * result + name.toLowerCase().hashCode()
         return result
     }
 

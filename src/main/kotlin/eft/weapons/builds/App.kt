@@ -12,8 +12,6 @@ data class TestItemTemplates(
 
 class TestItemTemplatesData : HashMap<String, TestItemTemplatesItem>()
 
-class TestItemTemplatesItem
-
 fun main(args: Array<String>) {
     println(args)
 }
