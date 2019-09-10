@@ -74,6 +74,38 @@ class AppTest {
     }
 
     @Test
+    fun `list all parent types`() {
+        val mapper = ObjectMapper().findAndRegisterModules().configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true)
+        val json = this.javaClass.getResourceAsStream("/TestItemTemplates.json")
+        val testItemTemplates = mapper.readValue(json, TestItemTemplates::class.java)
+        testItemTemplates.data.values.asSequence()
+            .map { it._parent!! }
+            .filter { it.isNotBlank() }
+            .distinct()
+            .forEach {
+                val parent = testItemTemplates.data[it]
+                println(parent?._name)
+            }
+
+        val first = testItemTemplates.data.values.first { it._parent == "" }
+        println("Root: " + first._id)
+    }
+
+    @Test
+    fun `build items hierarchy`() {
+        val mapper = ObjectMapper().findAndRegisterModules().configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true)
+        val json = this.javaClass.getResourceAsStream("/TestItemTemplates.json")
+        val testItemTemplates = mapper.readValue(json, TestItemTemplates::class.java)
+        testItemTemplates.data.values.asSequence().filter { it._parent == null }.forEach {
+            println("---" + it._name)
+        }
+        val parents = testItemTemplates.data.values.asSequence()
+            .distinctBy { it._parent }
+            .toList()
+//        println(parents.map { it._name })
+    }
+
+    @Test
     fun `dynamic json schema detection`() {
         val mapper = ObjectMapper().findAndRegisterModules()
         val json = this.javaClass.getResourceAsStream("/TestItemTemplates.json")
