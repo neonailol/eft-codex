@@ -112,10 +112,6 @@ class AppTest {
 
         val root = testItemTemplates.data !!.values.asSequence().filter { it._parent == "" }.first()
 
-        val rootChildren = testItemTemplates.data !!.values.asSequence()
-            .filter { it._parent == root._id }
-            .toList()
-
         val parents = testItemTemplates.data !!.values.asSequence()
             .distinctBy { it._parent }
             .filter { it._parent != "" }
@@ -125,8 +121,6 @@ class AppTest {
         val tree = ItemCategories(root, children(testItemTemplates, root, parents))
 
         println(stringBuilder(tree))
-//        println(parents.asSequence().filter { it?._parent == root._id }.toList())
-//        println(parents.map { testItemTemplates.data !![it?._parent] }.map { it?._name }.count())
     }
 
     private fun children(

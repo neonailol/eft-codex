@@ -89,7 +89,7 @@ public fun codeGeneration(context: Context): String {
                         else -> node.typeString()
                     }
 
-                    val mapNode = when(node.mapNode) {
+                    val mapNode = when (node.mapNode) {
                         true -> "Map"
                         false -> ""
                     }
@@ -101,7 +101,28 @@ public fun codeGeneration(context: Context): String {
                         if (nodeType == "Boolean") {
                             builder.append("    @JsonProperty(\"${node.name}\")" + System.lineSeparator())
                         }
-                        builder.append("    var ${node.name}: ${nodeType}${mapNode}? = null" + postfix)
+                        val nullable = if (node.haveNullValues) {
+                            "? = null"
+                        } else {
+                            ""
+                        }
+                        val init = if (nodeType == "Int" || nodeType == "Long") {
+                            " = 0"
+                        } else if (nodeType == "Double") {
+                            " = 0.0"
+                        }else if (nodeType == "Boolean") {
+                            "= false"
+                        } else {
+                            ""
+                        }
+                        val late = if (nodeType == "Int" || nodeType == "Double" || nodeType == "Long" || nodeType == "Boolean") {
+                            ""
+                        } else if (node.haveNullValues) {
+                            ""
+                        } else {
+                            "lateinit "
+                        }
+                        builder.append("    ${late}var ${node.name}: ${nodeType}${mapNode}${nullable}${init}" + postfix)
                     }
                 }
                 builder.append(System.lineSeparator())
@@ -244,7 +265,12 @@ data class Node(
     val mapNode: Boolean = false
 ) {
 
+    var haveNullValues = type.isNull
+
     fun updateType(node: Node) {
+        if (! haveNullValues && node.type.isNull) {
+            haveNullValues = true
+        }
         if (type.isArray) {
             val current = childrenType()
             val new = node.childrenType()
