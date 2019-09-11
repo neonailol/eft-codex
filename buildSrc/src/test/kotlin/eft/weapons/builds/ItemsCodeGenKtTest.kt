@@ -1,6 +1,5 @@
 package eft.weapons.builds
 
-import com.fasterxml.jackson.databind.JsonNode
 import org.testng.annotations.Test
 import java.nio.file.Files
 import java.nio.file.Paths
@@ -35,19 +34,5 @@ class ItemsCodeGenKtTest {
         }
         val codeGeneration = codeGeneration(context)
         println(codeGeneration)
-        findMaps(readTree)
     }
-
-    private fun findMaps(readTree: JsonNode) {
-        readTree.fields().forEach { field ->
-            if (field.value.fields().asSequence().count() > 0) {
-                if (field.value.fields().asSequence().all { q -> isMapIndex(q.key) }) {
-                    println(field.key)
-                }
-            }
-            findMaps(field.value)
-        }
-    }
-
-
 }

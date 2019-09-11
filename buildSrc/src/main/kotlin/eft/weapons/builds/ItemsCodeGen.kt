@@ -72,7 +72,12 @@ public fun codeGeneration(context: Context): String {
             }
 
             if (props.size == 1 && props[0].mapNode) {
-                builder.append("class ${clazzName}Map : HashMap<String, ${clazzName}>() {" + System.lineSeparator())
+                val type = if (props[0].type is TextNode) {
+                    "String"
+                } else {
+                    clazzName
+                }
+                builder.append("class ${clazzName}Map : HashMap<String, ${type}>() {" + System.lineSeparator())
                 builder.append("    override fun toString(): String = stringBuilder(this)" + System.lineSeparator())
                 builder.append("}" + System.lineSeparator() + System.lineSeparator())
                 builder.append(System.lineSeparator())
