@@ -1,46 +1,33 @@
 package eft.weapons.builds
 
 import eft.weapons.builds.items.templates.TestItemTemplatesItemProps
+import java.io.InputStream
+import java.nio.file.Files
+import java.nio.file.Paths
 import kotlin.reflect.full.memberProperties
 import kotlin.test.Test
 
-class ParseMe {
-    var map: Map<String, Int>? = null
-}
-
-class ParseMeС: HashMap<String, Int>()
-
 class AppTest {
 
-    @Test
-    fun `hueheu`() {
-
-
-        val json = """
-            {
-                "map": {
-                    "111": 133,
-                    "222": 133,
-                    "333": 133
-                }
-            }
-        """.trimIndent()
-        val mapper = mapper()
-        val parsed = mapper.readValue(json, ParseMe::class.java)
-        println(parsed.map)
+    fun testData(name: String): InputStream {
+        val path = Paths.get(
+            Paths.get(System.getProperty("user.dir")).toString(),
+            "TextAsset",
+            name
+        )
+        return Files.newInputStream(path)
     }
-
     @Test
     fun `can load some json`() {
         val mapper = mapper()
-        val json = this.javaClass.getResourceAsStream("/TestItemTemplates.json")
+        val json = testData("TestItemTemplates.bytes")
         var testItemTemplates = mapper.readValue(json, TestItemTemplates::class.java)
     }
 
     @Test
     fun `can find all weapons`() {
         val mapper = mapper()
-        val json = this.javaClass.getResourceAsStream("/TestItemTemplates.json")
+        val json = testData("TestItemTemplates.bytes")
         val testItemTemplates = mapper.readValue(json, TestItemTemplates::class.java)
         testItemTemplates.data.values.asSequence()
             .filter { it._parent == "5447b5cf4bdc2d65278b4567" }
@@ -50,7 +37,7 @@ class AppTest {
     @Test
     fun `can list pm attachments`() {
         val mapper = mapper()
-        val json = this.javaClass.getResourceAsStream("/TestItemTemplates.json")
+        val json = testData("TestItemTemplates.bytes")
         val testItemTemplates = mapper.readValue(json, TestItemTemplates::class.java)
         val weapon = testItemTemplates.data.values.asSequence()
             .filter { it._id == "5448bd6b4bdc2dfc2f8b4569" }
@@ -74,7 +61,7 @@ class AppTest {
     @Test
     fun `can find all params of weapons`() {
         val mapper = mapper()
-        val json = this.javaClass.getResourceAsStream("/TestItemTemplates.json")
+        val json = testData("TestItemTemplates.bytes")
         var testItemTemplates = mapper.readValue(json, TestItemTemplates::class.java)
         val validProps = mutableSetOf<String>()
         val invalidProps = mutableSetOf<String>()
@@ -96,7 +83,7 @@ class AppTest {
     @Test
     fun `list all parent types`() {
         val mapper = mapper()
-        val json = this.javaClass.getResourceAsStream("/TestItemTemplates.json")
+        val json = testData("TestItemTemplates.bytes")
         val testItemTemplates = mapper.readValue(json, TestItemTemplates::class.java)
         testItemTemplates.data.values.asSequence()
             .map { it._parent !! }
@@ -114,7 +101,7 @@ class AppTest {
     @Test
     fun `build items hierarchy`() {
         val mapper = mapper()
-        val json = this.javaClass.getResourceAsStream("/TestItemTemplates.json")
+        val json = testData("TestItemTemplates.bytes")
         val testItemTemplates = mapper.readValue(json, TestItemTemplates::class.java)
         testItemTemplates.data.values.asSequence().filter { it._parent == null }.forEach {
             println("---" + it._name)
