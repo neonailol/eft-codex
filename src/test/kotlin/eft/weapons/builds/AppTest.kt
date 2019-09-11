@@ -1,7 +1,5 @@
 package eft.weapons.builds
 
-import com.fasterxml.jackson.databind.MapperFeature
-import com.fasterxml.jackson.databind.ObjectMapper
 import kotlin.reflect.full.memberProperties
 import kotlin.test.Test
 
@@ -9,14 +7,14 @@ class AppTest {
 
     @Test
     fun `can load some json`() {
-        val mapper = ObjectMapper().findAndRegisterModules().configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true)
+        val mapper =  mapper()
         val json = this.javaClass.getResourceAsStream("/TestItemTemplates.json")
         var testItemTemplates = mapper.readValue(json, TestItemTemplates::class.java)
     }
 
     @Test
     fun `can find all weapons`() {
-        val mapper = ObjectMapper().findAndRegisterModules().configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true)
+        val mapper =  mapper()
         val json = this.javaClass.getResourceAsStream("/TestItemTemplates.json")
         var testItemTemplates = mapper.readValue(json, TestItemTemplates::class.java)
         testItemTemplates.data.values.asSequence()
@@ -27,7 +25,7 @@ class AppTest {
 
     @Test
     fun `can find all params of weapons`() {
-        val mapper = ObjectMapper().findAndRegisterModules().configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true)
+        val mapper =  mapper()
         val json = this.javaClass.getResourceAsStream("/TestItemTemplates.json")
         var testItemTemplates = mapper.readValue(json, TestItemTemplates::class.java)
         val validProps = mutableSetOf<String>()
@@ -49,7 +47,7 @@ class AppTest {
 
     @Test
     fun `list all parent types`() {
-        val mapper = ObjectMapper().findAndRegisterModules().configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true)
+        val mapper = mapper()
         val json = this.javaClass.getResourceAsStream("/TestItemTemplates.json")
         val testItemTemplates = mapper.readValue(json, TestItemTemplates::class.java)
         testItemTemplates.data.values.asSequence()
@@ -67,7 +65,7 @@ class AppTest {
 
     @Test
     fun `build items hierarchy`() {
-        val mapper = ObjectMapper().findAndRegisterModules().configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true)
+        val mapper =  mapper()
         val json = this.javaClass.getResourceAsStream("/TestItemTemplates.json")
         val testItemTemplates = mapper.readValue(json, TestItemTemplates::class.java)
         testItemTemplates.data.values.asSequence().filter { it._parent == null }.forEach {
