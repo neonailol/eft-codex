@@ -7,25 +7,48 @@ class AppTest {
 
     @Test
     fun `can load some json`() {
-        val mapper =  mapper()
+        val mapper = mapper()
         val json = this.javaClass.getResourceAsStream("/TestItemTemplates.json")
         var testItemTemplates = mapper.readValue(json, TestItemTemplates::class.java)
     }
 
     @Test
     fun `can find all weapons`() {
-        val mapper =  mapper()
+        val mapper = mapper()
         val json = this.javaClass.getResourceAsStream("/TestItemTemplates.json")
         val testItemTemplates = mapper.readValue(json, TestItemTemplates::class.java)
         testItemTemplates.data.values.asSequence()
-            .filter { it._parent == "5447b6254bdc2dc3278b4568" }
-            .map { it }
+            .filter { it._parent == "5447b5cf4bdc2d65278b4567" }
             .forEach { println(it) }
     }
 
     @Test
+    fun `can list pm attachments`() {
+        val mapper = mapper()
+        val json = this.javaClass.getResourceAsStream("/TestItemTemplates.json")
+        val testItemTemplates = mapper.readValue(json, TestItemTemplates::class.java)
+        val weapon = testItemTemplates.data.values.asSequence()
+            .filter { it._id == "5448bd6b4bdc2dfc2f8b4569" }
+            .first()
+        val magazines = weapon._props?.Slots?.asSequence()
+            ?.filter { it._name == "mod_magazine" }
+            ?.first()?._props?.filters?.asSequence()?.flatMap { it.Filter !!.asSequence() } !!
+            .map {
+                testItemTemplates.data.values.asSequence()
+                    .filter { f -> f._id == it }
+                    .first()
+            }.toList()
+
+        println("Weapon: ${weapon._name} Ergo: ${weapon._props?.Ergonomics}")
+        magazines.forEach {
+            println("Weapon: ${weapon._name} Mag: ${it._name} Ergo: ${weapon._props?.Ergonomics !! + it._props?.Ergonomics !!}")
+        }
+
+    }
+
+    @Test
     fun `can find all params of weapons`() {
-        val mapper =  mapper()
+        val mapper = mapper()
         val json = this.javaClass.getResourceAsStream("/TestItemTemplates.json")
         var testItemTemplates = mapper.readValue(json, TestItemTemplates::class.java)
         val validProps = mutableSetOf<String>()
@@ -65,7 +88,7 @@ class AppTest {
 
     @Test
     fun `build items hierarchy`() {
-        val mapper =  mapper()
+        val mapper = mapper()
         val json = this.javaClass.getResourceAsStream("/TestItemTemplates.json")
         val testItemTemplates = mapper.readValue(json, TestItemTemplates::class.java)
         testItemTemplates.data.values.asSequence().filter { it._parent == null }.forEach {
