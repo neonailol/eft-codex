@@ -4,7 +4,31 @@ import eft.weapons.builds.items.templates.TestItemTemplatesItemProps
 import kotlin.reflect.full.memberProperties
 import kotlin.test.Test
 
+class ParseMe {
+    var map: Map<String, Int>? = null
+}
+
+class ParseMeС: HashMap<String, Int>()
+
 class AppTest {
+
+    @Test
+    fun `hueheu`() {
+
+
+        val json = """
+            {
+                "map": {
+                    "111": 133,
+                    "222": 133,
+                    "333": 133
+                }
+            }
+        """.trimIndent()
+        val mapper = mapper()
+        val parsed = mapper.readValue(json, ParseMe::class.java)
+        println(parsed.map)
+    }
 
     @Test
     fun `can load some json`() {

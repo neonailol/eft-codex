@@ -73,29 +73,36 @@ public fun codeGeneration(context: Context): String {
                 builder.append("@JsonIgnoreProperties(\"Buffs\")" + System.lineSeparator())
             }
 
+
             builder.append("class ${clazzName} {" + System.lineSeparator())
             props.forEachIndexed { index, node ->
 
-                val nodeType = when (node.typeString()) {
-                    "Object" -> className(node.prefix + "_" + node.name)
-                    "Collection" -> "Collection<${collectionClass(node)}>"
-                    else -> node.typeString()
+                val postfix = when (index) {
+                    props.size - 1 -> ""
+                    else -> "" + System.lineSeparator()
                 }
 
-                if (node.name != "Buffs") {
-                    val postfix = when (index) {
-                        props.size - 1 -> ""
-                        else -> "" + System.lineSeparator()
+                if (node.mapNode) {
+                    builder.append("    var ${node.name}: Map<String, ${clazzName}>? = null" + postfix)
+                } else {
+                    val nodeType = when (node.typeString()) {
+                        "Object" -> className(node.prefix + "_" + node.name)
+                        "Collection" -> "Collection<${collectionClass(node)}>"
+                        else -> node.typeString()
                     }
-                    if (nodeType == "Boolean") {
-                        builder.append("    @JsonProperty(\"${node.name}\")" + System.lineSeparator())
+
+                    if (node.name != "Buffs") {
+                        if (nodeType == "Boolean") {
+                            builder.append("    @JsonProperty(\"${node.name}\")" + System.lineSeparator())
+                        }
+                        builder.append("    var ${node.name}: ${nodeType}? = null" + postfix)
                     }
-                    builder.append("    var ${node.name}: ${nodeType}? = null" + postfix)
                 }
             }
             builder.append(System.lineSeparator())
             builder.append("    override fun toString(): String = stringBuilder(this)" + System.lineSeparator())
-            builder.append(System.lineSeparator() + "}" + System.lineSeparator() + System.lineSeparator())
+            builder.append("}" + System.lineSeparator() + System.lineSeparator())
+
         }
     return builder.toString()
 }
@@ -128,23 +135,74 @@ public fun putIntoContext(
     rootNode: Node,
     entry: Map.Entry<String, JsonNode>
 ) {
-    entry.value.fields().forEach {
-        val node = context.addNode(Node(rootNode.prefix + "#" + rootNode.name, it.key, it.value))
-        if (it.value.isContainerNode) {
-            if (it.value.isObject) {
-                putIntoContext(context, node, it)
-            } else if (it.value.isArray) {
-                it.value.iterator().forEach { child ->
-                    putIntoContext(context, node, object : Map.Entry<String, JsonNode> {
-                        override val key: String
-                            get() = node.name
-                        override val value: JsonNode
-                            get() = child
-                    })
+    if (shouldSkip(rootNode, entry)) {
+        return
+    }
+    if (isMapNode(entry.value)) {
+        entry.value.fields().forEach {
+            val node = context.addNode(Node(rootNode.prefix + "#" + rootNode.name, rootNode.name, it.value, true))
+            if (it.value.isContainerNode) {
+                if (it.value.isObject) {
+                    putIntoContext(context, node, it)
+                } else if (it.value.isArray) {
+                    it.value.iterator().forEach { child ->
+                        putIntoContext(context, node, object : Map.Entry<String, JsonNode> {
+                            override val key: String
+                                get() = node.name
+                            override val value: JsonNode
+                                get() = child
+                        })
+                    }
+                }
+            }
+        }
+    } else {
+        entry.value.fields().forEach {
+            val node = context.addNode(Node(rootNode.prefix + "#" + rootNode.name, it.key, it.value))
+            if (it.value.isContainerNode) {
+                if (it.value.isObject) {
+                    putIntoContext(context, node, it)
+                } else if (it.value.isArray) {
+                    it.value.iterator().forEach { child ->
+                        putIntoContext(context, node, object : Map.Entry<String, JsonNode> {
+                            override val key: String
+                                get() = node.name
+                            override val value: JsonNode
+                                get() = child
+                        })
+                    }
                 }
             }
         }
     }
+
+}
+
+fun shouldSkip(rootNode: Node, entry: Map.Entry<String, JsonNode>): Boolean {
+    val skip = setOf("mail", "error", "interface")
+    if (rootNode.prefix == "TestBackendLocale" && skip.contains(entry.key)) {
+        return true
+    }
+    return false
+}
+
+fun isMapNode(node: JsonNode): Boolean {
+    if (node.fields().asSequence().count() > 0) {
+        if (node.fields().asSequence().all { q -> isMapIndex(q.key) }) {
+            return true
+        }
+    }
+    return false
+}
+
+fun isMapIndex(fieldName: String): Boolean {
+    if (fieldName.length != "5b47574386f77428ca22b336".length) {
+        return false
+    }
+    if (! fieldName.matches(Regex("[a-f0-9]{24}"))) {
+        return false
+    }
+    return true
 }
 
 class Context {
@@ -174,7 +232,8 @@ class Context {
 data class Node(
     val prefix: String,
     val name: String,
-    var type: JsonNode
+    var type: JsonNode,
+    val mapNode: Boolean = false
 ) {
 
     fun updateType(node: Node) {
@@ -198,6 +257,9 @@ data class Node(
                 return
             }
             if (type.javaClass == ArrayNode::class.java && node.type.javaClass == NullNode::class.java) {
+                return
+            }
+            if (type.javaClass == TextNode::class.java && node.type.javaClass == NullNode::class.java) {
                 return
             }
             if (type.javaClass == ArrayNode::class.java && node.type.javaClass == ObjectNode::class.java) {

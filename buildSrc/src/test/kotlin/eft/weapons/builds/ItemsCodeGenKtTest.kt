@@ -49,13 +49,5 @@ class ItemsCodeGenKtTest {
         }
     }
 
-    private fun isMapIndex(fieldName: String): Boolean {
-        if (fieldName.length != "5b47574386f77428ca22b336".length) {
-            return false
-        }
-        if (! fieldName.matches(Regex("[a-f0-9]{24}"))) {
-            return false
-        }
-        return true
-    }
+
 }
