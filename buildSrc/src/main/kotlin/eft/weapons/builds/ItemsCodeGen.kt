@@ -98,9 +98,7 @@ public fun codeGeneration(context: Context): String {
                             props.size - 1 -> ""
                             else -> "" + System.lineSeparator()
                         }
-                        if (nodeType == "Boolean") {
-                            builder.append("    @JsonProperty(\"${node.name}\")" + System.lineSeparator())
-                        }
+                        builder.append("    @JsonProperty(\"${node.name}\")" + System.lineSeparator())
                         val nullable = if (node.haveNullValues) {
                             "? = null"
                         } else {
@@ -110,7 +108,7 @@ public fun codeGeneration(context: Context): String {
                             " = 0"
                         } else if (nodeType == "Double") {
                             " = 0.0"
-                        }else if (nodeType == "Boolean") {
+                        } else if (nodeType == "Boolean") {
                             " = false"
                         } else {
                             ""
@@ -122,7 +120,8 @@ public fun codeGeneration(context: Context): String {
                         } else {
                             "lateinit "
                         }
-                        builder.append("    ${late}var ${node.name}: ${nodeType}${mapNode}${nullable}${init}" + postfix)
+                        val cleanName = node.name.removePrefix("is").removePrefix("_").decapitalize()
+                        builder.append("    ${late}var ${cleanName}: ${nodeType}${mapNode}${nullable}${init}" + postfix)
                     }
                 }
                 builder.append(System.lineSeparator())
