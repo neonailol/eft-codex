@@ -111,7 +111,7 @@ public fun codeGeneration(context: Context): String {
                         } else if (nodeType == "Double") {
                             " = 0.0"
                         }else if (nodeType == "Boolean") {
-                            "= false"
+                            " = false"
                         } else {
                             ""
                         }
