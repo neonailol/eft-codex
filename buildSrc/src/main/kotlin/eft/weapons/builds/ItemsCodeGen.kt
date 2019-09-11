@@ -25,9 +25,17 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 
-fun parseItemsFile(directory: File, project: Project) {
+fun mapper(): ObjectMapper {
+    return ObjectMapper().findAndRegisterModules()
+}
+
+fun parseBytes(directory: File, project: Project) {
     cleanGenerated(directory)
-    val mapper = ObjectMapper().findAndRegisterModules()
+    paresItemTemplates(project, directory)
+}
+
+private fun paresItemTemplates(project: Project, directory: File) {
+    val mapper = mapper()
     val json = Files.readString(Paths.get(project.rootDir.absolutePath, "TextAsset", "TestItemTemplates.bytes"))
     val tree = mapper.readTree(json)
     val data = tree.get("data")
@@ -46,11 +54,12 @@ fun parseItemsFile(directory: File, project: Project) {
     createFile.toFile().writeText(codeGeneration)
 }
 
-private fun codeGeneration(context: Context): String {
+public fun codeGeneration(context: Context): String {
     val builder = StringBuilder()
-    builder.append("package eft.weapons.builds" + System.lineSeparator())
+    builder.append("package eft.weapons.builds.items.templates" + System.lineSeparator())
     builder.append("import com.fasterxml.jackson.annotation.JsonProperty" + System.lineSeparator())
     builder.append("import com.fasterxml.jackson.annotation.JsonIgnoreProperties" + System.lineSeparator())
+    builder.append("import eft.weapons.builds.stringBuilder" + System.lineSeparator())
     builder.append(System.lineSeparator())
     context.nodes()
         .asSequence()
@@ -114,7 +123,7 @@ private fun className(clazz: String): String {
         .joinToString("")
 }
 
-private fun putIntoContext(
+public fun putIntoContext(
     context: Context,
     rootNode: Node,
     entry: Map.Entry<String, JsonNode>
@@ -173,15 +182,11 @@ data class Node(
             val current = childrenType()
             val new = node.childrenType()
             if (current?.javaClass != new?.javaClass) {
-
                 if (current?.javaClass == null) {
                     type = node.type
-                } else if (new?.javaClass == null) {
-                    // skip
-                } else {
-                    throw RuntimeException()
+                } else if (new?.javaClass != null) {
+                    throw RuntimeException("Unknown upgrade path for children from ${current.javaClass} to ${new.javaClass}")
                 }
-
             }
         }
         if (type.javaClass != node.type.javaClass) {

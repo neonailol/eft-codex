@@ -27,4 +27,3 @@ dependencies {
     testImplementation("org.jetbrains.kotlin:kotlin-test-testng")
     testImplementation("org.hamcrest:hamcrest:2.1")
 }
-

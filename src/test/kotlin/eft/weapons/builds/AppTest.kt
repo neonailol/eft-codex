@@ -1,5 +1,6 @@
 package eft.weapons.builds
 
+import eft.weapons.builds.items.templates.TestItemTemplatesItemProps
 import kotlin.reflect.full.memberProperties
 import kotlin.test.Test
 

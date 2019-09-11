@@ -1,4 +1,4 @@
-import eft.weapons.builds.parseItemsFile
+import eft.weapons.builds.parseBytes
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
@@ -55,7 +55,7 @@ tasks {
 
     val parseItemsFile by creating() {
         doLast {
-            parseItemsFile(generatedSources, project)
+            parseBytes(generatedSources, project)
         }
     }
 }
