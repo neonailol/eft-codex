@@ -140,7 +140,7 @@ public fun putIntoContext(
     }
     if (isMapNode(entry.value)) {
         entry.value.fields().forEach {
-            val node = context.addNode(Node(rootNode.prefix + "#" + rootNode.name, rootNode.name, it.value, true))
+            val node = context.addNode(Node(rootNode.prefix + "#" + rootNode.name, "", it.value, true))
             if (it.value.isContainerNode) {
                 if (it.value.isObject) {
                     putIntoContext(context, node, it)
