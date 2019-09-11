@@ -1,8 +1,7 @@
 package eft.weapons.builds
 
 import eft.weapons.builds.items.templates.TestItemTemplates
-import eft.weapons.builds.items.templates.TestItemTemplatesData
-import eft.weapons.builds.items.templates.TestItemTemplatesItem
+import eft.weapons.builds.items.templates.TestItemTemplatesDataProps
 import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Paths
@@ -32,7 +31,7 @@ class AppTest {
         val json = testData("TestItemTemplates.bytes")
         val testItemTemplates = mapper.readValue(json, TestItemTemplates::class.java)
         testItemTemplates.data
-        testItemTemplates.data.values.asSequence()
+        testItemTemplates.data!!.values.asSequence()
             .filter { it._parent == "5447b5cf4bdc2d65278b4567" }
             .forEach { println(it) }
     }
@@ -42,14 +41,14 @@ class AppTest {
         val mapper = mapper()
         val json = testData("TestItemTemplates.bytes")
         val testItemTemplates = mapper.readValue(json, TestItemTemplates::class.java)
-        val weapon = testItemTemplates.data.values.asSequence()
+        val weapon = testItemTemplates.data!!.values.asSequence()
             .filter { it._id == "5448bd6b4bdc2dfc2f8b4569" }
             .first()
         val magazines = weapon._props?.Slots?.asSequence()
             ?.filter { it._name == "mod_magazine" }
             ?.first()?._props?.filters?.asSequence()?.flatMap { it.Filter !!.asSequence() } !!
             .map {
-                testItemTemplates.data.values.asSequence()
+                testItemTemplates.data!!.values.asSequence()
                     .filter { f -> f._id == it }
                     .first()
             }.toList()
@@ -58,6 +57,7 @@ class AppTest {
         magazines.forEach {
             println("Weapon: ${weapon._name} Mag: ${it._name} Ergo: ${weapon._props?.Ergonomics !! + it._props?.Ergonomics !!}")
         }
+        println(weapon)
 
     }
 
@@ -68,10 +68,10 @@ class AppTest {
         var testItemTemplates = mapper.readValue(json, TestItemTemplates::class.java)
         val validProps = mutableSetOf<String>()
         val invalidProps = mutableSetOf<String>()
-        testItemTemplates.data.values.asSequence()
+        testItemTemplates.data!!.values.asSequence()
             .filter { it._parent == "5447b6254bdc2dc3278b4568" }
             .forEach {
-                for (memberProperty in TestItemTemplatesData::class.memberProperties) {
+                for (memberProperty in TestItemTemplatesDataProps::class.memberProperties) {
                     if (memberProperty.get(it?._props !!) != null) {
                         validProps.add(memberProperty.name)
                     } else {
@@ -88,16 +88,16 @@ class AppTest {
         val mapper = mapper()
         val json = testData("TestItemTemplates.bytes")
         val testItemTemplates = mapper.readValue(json, TestItemTemplates::class.java)
-        testItemTemplates.data.values.asSequence()
+        testItemTemplates.data!!.values.asSequence()
             .map { it._parent !! }
             .filter { it.isNotBlank() }
             .distinct()
             .forEach {
-                val parent = testItemTemplates.data[it]
+                val parent = testItemTemplates.data?.get(it)
                 println(parent?._name)
             }
 
-        val first = testItemTemplates.data.values.first { it._parent == "" }
+        val first = testItemTemplates.data!!.values.first { it._parent == "" }
         println("Root: " + first._id)
     }
 
@@ -106,10 +106,10 @@ class AppTest {
         val mapper = mapper()
         val json = testData("TestItemTemplates.bytes")
         val testItemTemplates = mapper.readValue(json, TestItemTemplates::class.java)
-        testItemTemplates.data.values.asSequence().filter { it._parent == null }.forEach {
+        testItemTemplates.data!!.values.asSequence().filter { it._parent == null }.forEach {
             println("---" + it._name)
         }
-        val parents = testItemTemplates.data.values.asSequence()
+        val parents = testItemTemplates.data!!.values.asSequence()
             .distinctBy { it._parent }
             .toList()
 //        println(parents.map { it._name })

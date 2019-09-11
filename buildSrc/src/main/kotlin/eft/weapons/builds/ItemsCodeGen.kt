@@ -65,7 +65,7 @@ public fun codeGeneration(context: Context): String {
             val clazzName =
                 className(clazz)
 
-            if (clazzName == "TestItemTemplatesItemProps") {
+            if (clazzName == "TestItemTemplatesDataProps") {
                 builder.append("@JsonIgnoreProperties(\"Buffs\")" + System.lineSeparator())
             }
 
