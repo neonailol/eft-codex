@@ -73,18 +73,15 @@ public fun codeGeneration(context: Context): String {
                 builder.append("@JsonIgnoreProperties(\"Buffs\")" + System.lineSeparator())
             }
 
+            if (props.size == 1 && props[0].mapNode) {
+                builder.append("class ${clazzName}Map : HashMap<String, ${clazzName}>() {" + System.lineSeparator())
+                builder.append("    override fun toString(): String = stringBuilder(this)" + System.lineSeparator())
+                builder.append("}" + System.lineSeparator() + System.lineSeparator())
+                builder.append(System.lineSeparator())
+            } else {
+                builder.append("class ${clazzName} {" + System.lineSeparator())
+                props.forEachIndexed { index, node ->
 
-            builder.append("class ${clazzName} {" + System.lineSeparator())
-            props.forEachIndexed { index, node ->
-
-                val postfix = when (index) {
-                    props.size - 1 -> ""
-                    else -> "" + System.lineSeparator()
-                }
-
-                if (node.mapNode) {
-                    builder.append("    var ${node.name}: Map<String, ${clazzName}>? = null" + postfix)
-                } else {
                     val nodeType = when (node.typeString()) {
                         "Object" -> className(node.prefix + "_" + node.name)
                         "Collection" -> "Collection<${collectionClass(node)}>"
@@ -92,17 +89,20 @@ public fun codeGeneration(context: Context): String {
                     }
 
                     if (node.name != "Buffs") {
+                        val postfix = when (index) {
+                            props.size - 1 -> ""
+                            else -> "" + System.lineSeparator()
+                        }
                         if (nodeType == "Boolean") {
                             builder.append("    @JsonProperty(\"${node.name}\")" + System.lineSeparator())
                         }
                         builder.append("    var ${node.name}: ${nodeType}? = null" + postfix)
                     }
                 }
+                builder.append(System.lineSeparator())
+                builder.append("    override fun toString(): String = stringBuilder(this)" + System.lineSeparator())
+                builder.append("}" + System.lineSeparator() + System.lineSeparator())
             }
-            builder.append(System.lineSeparator())
-            builder.append("    override fun toString(): String = stringBuilder(this)" + System.lineSeparator())
-            builder.append("}" + System.lineSeparator() + System.lineSeparator())
-
         }
     return builder.toString()
 }
