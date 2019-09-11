@@ -16,10 +16,10 @@ class AppTest {
     fun `can find all weapons`() {
         val mapper =  mapper()
         val json = this.javaClass.getResourceAsStream("/TestItemTemplates.json")
-        var testItemTemplates = mapper.readValue(json, TestItemTemplates::class.java)
+        val testItemTemplates = mapper.readValue(json, TestItemTemplates::class.java)
         testItemTemplates.data.values.asSequence()
             .filter { it._parent == "5447b6254bdc2dc3278b4568" }
-            .map { it._name }
+            .map { it }
             .forEach { println(it) }
     }
 

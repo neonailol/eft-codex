@@ -51,6 +51,7 @@ private fun codeGeneration(context: Context): String {
     builder.append("package eft.weapons.builds" + System.lineSeparator())
     builder.append("import com.fasterxml.jackson.annotation.JsonProperty" + System.lineSeparator())
     builder.append("import com.fasterxml.jackson.annotation.JsonIgnoreProperties" + System.lineSeparator())
+    builder.append(System.lineSeparator())
     context.nodes()
         .asSequence()
         .groupBy { it.prefix }
@@ -83,8 +84,9 @@ private fun codeGeneration(context: Context): String {
                     builder.append("    var ${node.name}: ${nodeType}? = null" + postfix)
                 }
             }
-
-            builder.append(System.lineSeparator() + "}" + System.lineSeparator())
+            builder.append(System.lineSeparator())
+            builder.append("    override fun toString(): String = stringBuilder(this)" + System.lineSeparator())
+            builder.append(System.lineSeparator() + "}" + System.lineSeparator() + System.lineSeparator())
         }
     return builder.toString()
 }
