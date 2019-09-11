@@ -1,6 +1,8 @@
 package eft.weapons.builds
 
-import eft.weapons.builds.items.templates.TestItemTemplatesItemProps
+import eft.weapons.builds.items.templates.TestItemTemplates
+import eft.weapons.builds.items.templates.TestItemTemplatesData
+import eft.weapons.builds.items.templates.TestItemTemplatesItem
 import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Paths
@@ -29,6 +31,7 @@ class AppTest {
         val mapper = mapper()
         val json = testData("TestItemTemplates.bytes")
         val testItemTemplates = mapper.readValue(json, TestItemTemplates::class.java)
+        testItemTemplates.data
         testItemTemplates.data.values.asSequence()
             .filter { it._parent == "5447b5cf4bdc2d65278b4567" }
             .forEach { println(it) }
@@ -68,7 +71,7 @@ class AppTest {
         testItemTemplates.data.values.asSequence()
             .filter { it._parent == "5447b6254bdc2dc3278b4568" }
             .forEach {
-                for (memberProperty in TestItemTemplatesItemProps::class.memberProperties) {
+                for (memberProperty in TestItemTemplatesData::class.memberProperties) {
                     if (memberProperty.get(it?._props !!) != null) {
                         validProps.add(memberProperty.name)
                     } else {

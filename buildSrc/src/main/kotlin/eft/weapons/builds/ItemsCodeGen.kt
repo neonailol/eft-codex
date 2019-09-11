@@ -38,11 +38,9 @@ private fun paresItemTemplates(project: Project, directory: File) {
     val mapper = mapper()
     val json = Files.readString(Paths.get(project.rootDir.absolutePath, "TextAsset", "TestItemTemplates.bytes"))
     val tree = mapper.readTree(json)
-    val data = tree.get("data")
     val context = Context()
-    val types = HashSet<String>()
-    data.fields().forEach {
-        val rootNode = context.addNode(Node("TestItemTemplatesItem", it.key, it.value))
+    tree.fields().forEach {
+        val rootNode = context.addNode(Node("TestItemTemplates", it.key, it.value, isMapNode(it.value)))
         if (it.value.isContainerNode) {
             putIntoContext(context, rootNode, it)
         }
@@ -187,7 +185,7 @@ public fun putIntoContext(
 
 fun shouldSkip(rootNode: Node): Boolean {
     val skip = setOf("mail", "error", "interface")
-    if (rootNode.prefix == "TestBackendLocale" && skip.contains(rootNode.name)) {
+    if (rootNode.prefix == "TestBackendLocale#data" && skip.contains(rootNode.name)) {
         return true
     }
     return false
@@ -289,7 +287,7 @@ data class Node(
             JsonNodeType.BINARY -> "binary"
             JsonNodeType.BOOLEAN -> "Boolean"
             JsonNodeType.MISSING -> "missing"
-            JsonNodeType.NULL -> "null"
+            JsonNodeType.NULL -> "Any"
 
             JsonNodeType.NUMBER -> {
                 return when (type) {
