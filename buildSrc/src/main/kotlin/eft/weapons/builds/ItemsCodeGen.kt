@@ -137,7 +137,7 @@ public fun putIntoContext(
     rootNode: Node,
     entry: Map.Entry<String, JsonNode>
 ) {
-    if (shouldSkip(rootNode, entry)) {
+    if (shouldSkip(rootNode)) {
         return
     }
     if (isMapNode(entry.value)) {
@@ -180,9 +180,9 @@ public fun putIntoContext(
 
 }
 
-fun shouldSkip(rootNode: Node, entry: Map.Entry<String, JsonNode>): Boolean {
+fun shouldSkip(rootNode: Node): Boolean {
     val skip = setOf("mail", "error", "interface")
-    if (rootNode.prefix == "TestBackendLocale" && skip.contains(entry.key)) {
+    if (rootNode.prefix == "TestBackendLocale" && skip.contains(rootNode.name)) {
         return true
     }
     return false
@@ -211,6 +211,9 @@ class Context {
     private val nodes: MutableSet<Node> = mutableSetOf()
 
     fun addNode(node: Node): Node {
+        if (shouldSkip(node)) {
+            return node
+        }
         nodes.add(node)
         nodes.filter { it.prefix == node.prefix && it.name == node.name }
             .forEach {
