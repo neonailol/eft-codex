@@ -27,7 +27,7 @@ class ItemsCodeGenKtTest {
         val types = HashSet<String>()
         for (datum in readTree) {
             datum.fields().forEach {
-                val rootNode = context.addNode(Node("TestBackendLocale", it.key, it.value))
+                val rootNode = context.addNode(Node("TestBackendLocale", it.key, it.value, isMapNode(it.value)))
                 if (it.value.isContainerNode) {
                     putIntoContext(context, rootNode, it)
                 }

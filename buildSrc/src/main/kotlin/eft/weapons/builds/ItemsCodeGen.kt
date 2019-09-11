@@ -41,12 +41,10 @@ private fun paresItemTemplates(project: Project, directory: File) {
     val data = tree.get("data")
     val context = Context()
     val types = HashSet<String>()
-    for (datum in data) {
-        datum.fields().forEach {
-            val rootNode = context.addNode(Node("TestItemTemplatesItem", it.key, it.value))
-            if (it.value.isContainerNode) {
-                putIntoContext(context, rootNode, it)
-            }
+    data.fields().forEach {
+        val rootNode = context.addNode(Node("TestItemTemplatesItem", it.key, it.value))
+        if (it.value.isContainerNode) {
+            putIntoContext(context, rootNode, it)
         }
     }
     val codeGeneration = codeGeneration(context)
@@ -88,6 +86,10 @@ public fun codeGeneration(context: Context): String {
                         else -> node.typeString()
                     }
 
+                    val mapNode = when(node.mapNode) {
+                        true -> "Map"
+                        false -> ""
+                    }
                     if (node.name != "Buffs") {
                         val postfix = when (index) {
                             props.size - 1 -> ""
@@ -96,7 +98,7 @@ public fun codeGeneration(context: Context): String {
                         if (nodeType == "Boolean") {
                             builder.append("    @JsonProperty(\"${node.name}\")" + System.lineSeparator())
                         }
-                        builder.append("    var ${node.name}: ${nodeType}? = null" + postfix)
+                        builder.append("    var ${node.name}: ${nodeType}${mapNode}? = null" + postfix)
                     }
                 }
                 builder.append(System.lineSeparator())
@@ -158,7 +160,7 @@ public fun putIntoContext(
         }
     } else {
         entry.value.fields().forEach {
-            val node = context.addNode(Node(rootNode.prefix + "#" + rootNode.name, it.key, it.value))
+            val node = context.addNode(Node(rootNode.prefix + "#" + rootNode.name, it.key, it.value, isMapNode(it.value)))
             if (it.value.isContainerNode) {
                 if (it.value.isObject) {
                     putIntoContext(context, node, it)
