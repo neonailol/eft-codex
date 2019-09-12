@@ -43,7 +43,7 @@ fun itemName(id: String): String {
     val mapper = mapper()
     val json = openAsset("TestBackendLocaleEn.bytes")
     val locale = mapper.readValue(json, TestBackendLocale::class.java)
-    return locale.data.templates[id]?.shortName ?: id
+    return locale.data.templates[id]?.name ?: id
 }
 
 fun TestItemTemplates.getItem(id: String): TestItemTemplatesData {

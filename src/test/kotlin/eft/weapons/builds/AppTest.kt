@@ -76,10 +76,14 @@ class AppTest {
         val testItemTemplates = loadBytes("TestItemTemplates.bytes", TestItemTemplates::class.java)
         val weapon = testItemTemplates.getItem("571a12c42459771f627b58a0")
         val slots = weapon.props.slots.map { SlotVariant(it.name, it.props.filters.flatMap { p -> p.filter }, it.required) }
-        println(weapon)
-        println(slots)
-        println(permutations(listOf(listOf("A", "B", "C"), listOf("Q", "W", "E"))))
-        println(permutations(slots.map { it.items }))
+        val variations = permutations(slots.map { it.toSlots() })
+        for (variation in variations) {
+            val mods = variation.map { testItemTemplates.getItem(it.id) }
+            val ergo = mods.map { it.props.ergonomics }.sum()
+            val recoil = mods.map { it.props.recoil }.sum()
+            println("${weapon.props.ergonomics + ergo} | ${weapon.props.recoilForceUp * (1 + (recoil / 100))} | "
+                        + mods.map { itemName(it.id) })
+        }
     }
 
     fun <T> permutations(collections: List<Collection<T>>): Collection<List<T>> {
@@ -100,7 +104,7 @@ class AppTest {
         for (element in currentCollection) {
             val copy = Lists.newLinkedList(current)
             copy.add(element)
-            permutationsImpl(ori, res, d+1, copy)
+            permutationsImpl(ori, res, d + 1, copy)
         }
     }
 
@@ -170,5 +174,16 @@ class ItemCategories(
 data class SlotVariant(
     val name: String,
     val items: Collection<String>,
+    val required: Boolean
+) {
+
+    fun toSlots(): Collection<Slot> {
+        return items.map { Slot(it, name, required) }
+    }
+}
+
+data class Slot(
+    val id: String,
+    val slot: String,
     val required: Boolean
 )
