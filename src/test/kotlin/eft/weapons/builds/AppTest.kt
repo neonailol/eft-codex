@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder
 import eft.weapons.builds.items.templates.TestBackendLocale
 import eft.weapons.builds.items.templates.TestItemTemplates
 import eft.weapons.builds.items.templates.TestItemTemplatesData
+import org.testng.collections.Lists
 import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Paths
@@ -74,11 +75,33 @@ class AppTest {
     fun `can list all tt attachments`() {
         val testItemTemplates = loadBytes("TestItemTemplates.bytes", TestItemTemplates::class.java)
         val weapon = testItemTemplates.getItem("571a12c42459771f627b58a0")
-        val slots = weapon.props.slots.
-            map { SlotVariant(it.name, it.props.filters.flatMap { p -> p.filter }, it.required) }
+        val slots = weapon.props.slots.map { SlotVariant(it.name, it.props.filters.flatMap { p -> p.filter }, it.required) }
         println(weapon)
         println(slots)
-        // https://stackoverflow.com/a/23870892
+        println(permutations(listOf(listOf("A", "B", "C"), listOf("Q", "W", "E"))))
+        println(permutations(slots.map { it.items }))
+    }
+
+    fun <T> permutations(collections: List<Collection<T>>): Collection<List<T>> {
+        if (collections.isNullOrEmpty()) {
+            return emptyList()
+        }
+        val res: MutableCollection<List<T>> = mutableListOf()
+        permutationsImpl(collections, res, 0, mutableListOf<T>())
+        return res
+    }
+
+    fun <T> permutationsImpl(ori: List<Collection<T>>, res: MutableCollection<List<T>>, d: Int, current: List<T>) {
+        if (d == ori.size) {
+            res.add(current)
+            return
+        }
+        val currentCollection = ori[d]
+        for (element in currentCollection) {
+            val copy = Lists.newLinkedList(current)
+            copy.add(element)
+            permutationsImpl(ori, res, d+1, copy)
+        }
     }
 
     @Test
