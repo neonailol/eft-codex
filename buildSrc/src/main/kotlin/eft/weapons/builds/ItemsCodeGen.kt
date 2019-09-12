@@ -27,9 +27,6 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 
-// Nullability не работает потому что в нодах нет полей чтобы его составить, надо както научиться опрашивать все дочерние ноды
-// Попробовать инциализировать все поля дефолтными значениями и там дальше джеексон разберётся
-
 lateinit var g: Project
 
 fun mapper(): ObjectMapper {
@@ -134,7 +131,7 @@ public fun codeGeneration(context: Context): String {
                         }
                         builder.append("    @JsonProperty(\"${node.name}\")" + System.lineSeparator())
                         val nullable = if (node.haveNullValues) {
-                            "? = null"
+                            "?"
                         } else {
                             ""
                         }
@@ -144,8 +141,10 @@ public fun codeGeneration(context: Context): String {
                             " = 0.0"
                         } else if (nodeType == "Boolean") {
                             " = false"
+                        } else if (node.typeString() == "Collection") {
+                            " = listOf()"
                         } else {
-                            ""
+                            " = ${nodeType}${mapNode}()"
                         }
                         val late = if (nodeType == "Int" || nodeType == "Double" || nodeType == "Long" || nodeType == "Boolean") {
                             ""
@@ -155,7 +154,7 @@ public fun codeGeneration(context: Context): String {
                             "lateinit "
                         }
                         val cleanName = node.name.removePrefix("is").removePrefix("_").decapitalize()
-                        builder.append("    ${late}var ${cleanName}: ${nodeType}${mapNode}${nullable}${init}" + postfix)
+                        builder.append("    var ${cleanName}: ${nodeType}${mapNode}${nullable}${init}" + postfix)
                     }
                 }
                 builder.append(System.lineSeparator())
