@@ -64,9 +64,9 @@ class AppTest {
                     .first()
             }.toList()
 
-        println("Weapon: ${weapon.name} Ergo: ${weapon.props.ergonomics}")
+        println("Weapon: ${itemName(weapon.id)} Ergo: ${weapon.props.ergonomics}")
         magazines.forEach {
-            println("Weapon: ${weapon.name} Mag: ${it.name} Ergo: ${weapon.props.ergonomics + it.props.ergonomics}")
+            println("Weapon: ${itemName(weapon.id)} Mag: ${itemName(it.id)} Ergo: ${weapon.props.ergonomics + it.props.ergonomics}")
         }
     }
 

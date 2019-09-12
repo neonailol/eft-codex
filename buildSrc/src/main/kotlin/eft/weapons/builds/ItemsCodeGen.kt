@@ -27,14 +27,11 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 
-lateinit var g: Project
-
 fun mapper(): ObjectMapper {
     return ObjectMapper().findAndRegisterModules()
 }
 
 fun parseBytes(directory: File, project: Project) {
-    g = project
     cleanGenerated(directory)
     paresItemTemplates(project, directory)
     parseLocale(project, directory)
@@ -217,9 +214,6 @@ public fun putIntoContext(
     } else {
         entry.value.fields().forEach {
             val node = context.addNode(Node(rootNode.prefix + "#" + rootNode.name, it.key, it.value, isMapNode(it.value)))
-            if (it.key == "RigLayoutName") {
-                g.logger.lifecycle(node.toString())
-            }
             if (it.value.isContainerNode) {
                 if (it.value.isObject) {
                     putIntoContext(context, node, it)
@@ -308,9 +302,6 @@ data class Node(
             haveNullValues = true
         }
         //TestBackendLocaleDataTemplates FoldedSlot
-        if (node.name == "RigLayoutName") {
-            g.logger.lifecycle(node.type.toString())
-        }
         if (type.isArray) {
             val current = childrenType()
             val new = node.childrenType()
