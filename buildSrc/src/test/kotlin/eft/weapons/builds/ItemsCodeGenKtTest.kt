@@ -1,5 +1,6 @@
 package eft.weapons.builds
 
+import org.apache.commons.collections4.multimap.HashSetValuedHashMap
 import org.testng.annotations.Test
 import java.nio.file.Files
 import java.nio.file.Paths
@@ -21,7 +22,7 @@ class ItemsCodeGenKtTest {
             "TestItemTemplates.bytes"
         )
         val readTree = mapper.readTree(Files.newInputStream(path))
-        val context = Context()
+        val context = Context(HashSetValuedHashMap())
         readTree.fields().forEach {
             val rootNode = context.addNode(Node("TestItemTemplates", it.key, it.value, isMapNode(it.value)))
             if (it.value.isContainerNode) {
@@ -41,7 +42,7 @@ class ItemsCodeGenKtTest {
             "TestBackendLocaleEn.bytes"
         )
         val readTree = mapper.readTree(Files.newInputStream(path))
-        val context = Context()
+        val context = Context(HashSetValuedHashMap())
         readTree.fields().forEach {
             val rootNode = context.addNode(Node("TestBackendLocale", it.key, it.value, isMapNode(it.value)))
             if (it.value.isContainerNode) {

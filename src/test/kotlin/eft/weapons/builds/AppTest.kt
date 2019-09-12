@@ -3,13 +3,12 @@ package eft.weapons.builds
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonPropertyOrder
+import eft.weapons.builds.items.templates.TestBackendLocale
 import eft.weapons.builds.items.templates.TestItemTemplates
 import eft.weapons.builds.items.templates.TestItemTemplatesData
-import eft.weapons.builds.items.templates.TestItemTemplatesDataProps
 import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Paths
-import kotlin.reflect.full.memberProperties
 import kotlin.test.Test
 
 class AppTest {
@@ -24,10 +23,17 @@ class AppTest {
     }
 
     @Test
-    fun `can load some json`() {
+    fun `can load items`() {
         val mapper = mapper()
         val json = testData("TestItemTemplates.bytes")
         var testItemTemplates = mapper.readValue(json, TestItemTemplates::class.java)
+    }
+
+    @Test
+    fun `can load locale`() {
+        val mapper = mapper()
+        val json = testData("TestBackendLocaleEn.bytes")
+        var testItemTemplates = mapper.readValue(json, TestBackendLocale::class.java)
     }
 
     @Test
@@ -62,28 +68,6 @@ class AppTest {
         magazines.forEach {
             println("Weapon: ${weapon.name} Mag: ${it.name} Ergo: ${weapon.props.ergonomics + it.props.ergonomics}")
         }
-    }
-
-    @Test
-    fun `can find all params of weapons`() {
-        val mapper = mapper()
-        val json = testData("TestItemTemplates.bytes")
-        val testItemTemplates = mapper.readValue(json, TestItemTemplates::class.java)
-        val validProps = mutableSetOf<String>()
-        val invalidProps = mutableSetOf<String>()
-        testItemTemplates.data.values.asSequence()
-            .filter { it.parent == "5447b6254bdc2dc3278b4568" }
-            .forEach {
-                for (memberProperty in TestItemTemplatesDataProps::class.memberProperties) {
-                    if (memberProperty.get(it.props) != null) {
-                        validProps.add(memberProperty.name)
-                    } else {
-                        invalidProps.add(memberProperty.name)
-                    }
-                }
-            }
-        println(validProps)
-        println(invalidProps)
     }
 
     @Test

@@ -16,6 +16,8 @@ import com.fasterxml.jackson.databind.node.NumericNode
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.fasterxml.jackson.databind.node.ShortNode
 import com.fasterxml.jackson.databind.node.TextNode
+import org.apache.commons.collections4.MultiValuedMap
+import org.apache.commons.collections4.multimap.HashSetValuedHashMap
 import org.apache.commons.lang3.builder.ToStringBuilder
 import org.apache.commons.lang3.builder.ToStringStyle
 import org.apache.commons.text.WordUtils
@@ -25,20 +27,51 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 
+// Nullability не работает потому что в нодах нет полей чтобы его составить, надо както научиться опрашивать все дочерние ноды
+// Попробовать инциализировать все поля дефолтными значениями и там дальше джеексон разберётся
+
+lateinit var g: Project
+
 fun mapper(): ObjectMapper {
     return ObjectMapper().findAndRegisterModules()
 }
 
 fun parseBytes(directory: File, project: Project) {
+    g = project
     cleanGenerated(directory)
     paresItemTemplates(project, directory)
+    parseLocale(project, directory)
+}
+
+fun parseLocale(project: Project, directory: File) {
+    val mapper = mapper()
+    val json = Files.readString(Paths.get(project.rootDir.absolutePath, "TextAsset", "TestBackendLocaleEn.bytes"))
+    val tree = mapper.readTree(json)
+    val ignores = HashSetValuedHashMap<String, String>().also {
+        it.put("TestBackendLocaleData", "mail")
+        it.put("TestBackendLocaleData", "error")
+        it.put("TestBackendLocaleData", "interface")
+    }
+    val context = Context(ignores)
+    tree.fields().forEach {
+        val rootNode = context.addNode(Node("TestBackendLocale", it.key, it.value, isMapNode(it.value)))
+        if (it.value.isContainerNode) {
+            putIntoContext(context, rootNode, it)
+        }
+    }
+    val codeGeneration = codeGeneration(context)
+    val createFile = Files.createFile(Paths.get(directory.absolutePath, "TestBackendLocale.kt"))
+    createFile.toFile().writeText(codeGeneration)
 }
 
 private fun paresItemTemplates(project: Project, directory: File) {
     val mapper = mapper()
     val json = Files.readString(Paths.get(project.rootDir.absolutePath, "TextAsset", "TestItemTemplates.bytes"))
     val tree = mapper.readTree(json)
-    val context = Context()
+    val ignores = HashSetValuedHashMap<String, String>().also {
+        it.put("TestItemTemplatesDataProps", "Buffs")
+    }
+    val context = Context(ignores)
     tree.fields().forEach {
         val rootNode = context.addNode(Node("TestItemTemplates", it.key, it.value, isMapNode(it.value)))
         if (it.value.isContainerNode) {
@@ -62,12 +95,14 @@ public fun codeGeneration(context: Context): String {
         .groupBy { it.prefix }
         .toSortedMap()
         .forEach { (clazz, props) ->
-            val clazzName =
-                className(clazz)
+            val clazzName = className(clazz)
 
-            if (clazzName == "TestItemTemplatesDataProps") {
-                builder.append("@JsonIgnoreProperties(\"Buffs\")" + System.lineSeparator())
-            }
+            context.ignoredFields.keys()
+                .firstOrNull { it == clazzName }
+                .let {
+                    val fields = context.ignoredFields.get(it).joinToString(",", transform = { "\"$it\"" })
+                    builder.append("@JsonIgnoreProperties($fields)" + System.lineSeparator())
+                }
 
             if (props.size == 1 && props[0].mapNode) {
                 val type = if (props[0].type is TextNode) {
@@ -78,7 +113,6 @@ public fun codeGeneration(context: Context): String {
                 builder.append("class ${clazzName}Map : HashMap<String, ${type}>() {" + System.lineSeparator())
                 builder.append("    override fun toString(): String = stringBuilder(this)" + System.lineSeparator())
                 builder.append("}" + System.lineSeparator() + System.lineSeparator())
-                builder.append(System.lineSeparator())
             } else {
                 builder.append("class ${clazzName} {" + System.lineSeparator())
                 props.forEachIndexed { index, node ->
@@ -160,7 +194,7 @@ public fun putIntoContext(
     rootNode: Node,
     entry: Map.Entry<String, JsonNode>
 ) {
-    if (shouldSkip(rootNode)) {
+    if (context.shouldSkip(rootNode)) {
         return
     }
     if (isMapNode(entry.value)) {
@@ -184,6 +218,9 @@ public fun putIntoContext(
     } else {
         entry.value.fields().forEach {
             val node = context.addNode(Node(rootNode.prefix + "#" + rootNode.name, it.key, it.value, isMapNode(it.value)))
+            if (it.key == "RigLayoutName") {
+                g.logger.lifecycle(node.toString())
+            }
             if (it.value.isContainerNode) {
                 if (it.value.isObject) {
                     putIntoContext(context, node, it)
@@ -201,14 +238,6 @@ public fun putIntoContext(
         }
     }
 
-}
-
-fun shouldSkip(rootNode: Node): Boolean {
-    val skip = setOf("mail", "error", "interface")
-    if (rootNode.prefix == "TestBackendLocale#data" && skip.contains(rootNode.name)) {
-        return true
-    }
-    return false
 }
 
 fun isMapNode(node: JsonNode): Boolean {
@@ -230,7 +259,8 @@ fun isMapIndex(fieldName: String): Boolean {
     return true
 }
 
-class Context {
+class Context(val ignoredFields: MultiValuedMap<String, String>) {
+
     private val nodes: MutableSet<Node> = mutableSetOf()
 
     fun addNode(node: Node): Node {
@@ -247,6 +277,14 @@ class Context {
 
     fun nodes(): Set<Node> {
         return HashSet(nodes)
+    }
+
+    fun shouldSkip(rootNode: Node): Boolean {
+        val className = className(rootNode.prefix)
+        return ignoredFields.keys()
+            .filter { it == className }
+            .flatMap { ignoredFields.get(it) }
+            .any { it == rootNode.name }
     }
 
     override fun toString(): String {
@@ -269,6 +307,10 @@ data class Node(
     fun updateType(node: Node) {
         if (! haveNullValues && node.type.isNull) {
             haveNullValues = true
+        }
+        //TestBackendLocaleDataTemplates FoldedSlot
+        if (node.name == "RigLayoutName") {
+            g.logger.lifecycle(node.type.toString())
         }
         if (type.isArray) {
             val current = childrenType()
