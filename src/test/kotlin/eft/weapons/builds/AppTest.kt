@@ -71,6 +71,17 @@ class AppTest {
     }
 
     @Test
+    fun `can list all tt attachments`() {
+        val testItemTemplates = loadBytes("TestItemTemplates.bytes", TestItemTemplates::class.java)
+        val weapon = testItemTemplates.getItem("571a12c42459771f627b58a0")
+        val slots = weapon.props.slots.
+            map { SlotVariant(it.name, it.props.filters.flatMap { p -> p.filter }, it.required) }
+        println(weapon)
+        println(slots)
+        // https://stackoverflow.com/a/23870892
+    }
+
+    @Test
     fun `list all parent types`() {
         val mapper = mapper()
         val json = testData("TestItemTemplates.bytes")
@@ -132,3 +143,9 @@ class ItemCategories(
 
     var rootName: String = root.name
 }
+
+data class SlotVariant(
+    val name: String,
+    val items: Collection<String>,
+    val required: Boolean
+)

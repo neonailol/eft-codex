@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.MapperFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import eft.weapons.builds.items.templates.TestBackendLocale
+import eft.weapons.builds.items.templates.TestItemTemplates
+import eft.weapons.builds.items.templates.TestItemTemplatesData
 import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Paths
@@ -22,7 +24,7 @@ fun stringBuilder(any: Any): String {
         .writeValueAsString(any)
 }
 
-fun openAsses(name: String): InputStream {
+fun openAsset(name: String): InputStream {
     val path = Paths.get(
         Paths.get(System.getProperty("user.dir")).toString(),
         "TextAsset",
@@ -31,11 +33,21 @@ fun openAsses(name: String): InputStream {
     return Files.newInputStream(path)
 }
 
+fun <T : Any> loadBytes(name: String, clazz: Class<T>): T {
+    val mapper = mapper()
+    val json = openAsset(name)
+    return mapper.readValue(json, clazz)
+}
+
 fun itemName(id: String): String {
     val mapper = mapper()
-    val json = openAsses("TestBackendLocaleEn.bytes")
+    val json = openAsset("TestBackendLocaleEn.bytes")
     val locale = mapper.readValue(json, TestBackendLocale::class.java)
-    return locale.data.templates[id]?.name ?: id
+    return locale.data.templates[id]?.shortName ?: id
+}
+
+fun TestItemTemplates.getItem(id: String): TestItemTemplatesData {
+    return this.data[id] ?: throw IllegalStateException("Unknown id: $id")
 }
 
 fun main(args: Array<String>) {
