@@ -3,6 +3,7 @@ package eft.weapons.builds
 import eft.weapons.builds.Locale.itemName
 import eft.weapons.builds.items.templates.TestBackendLocale
 import eft.weapons.builds.items.templates.TestItemTemplates
+import eft.weapons.builds.items.templates.TestItemTemplatesData
 import org.apache.commons.collections4.comparators.ComparatorChain
 import org.apache.commons.csv.CSVFormat
 import org.apache.commons.csv.CSVPrinter
@@ -38,9 +39,7 @@ class AppTest {
             .filter { it.name == "mod_magazine" }
             .first().props.filters.asSequence().flatMap { it.filter.asSequence() }
             .map {
-                testItemTemplates.data.values.asSequence()
-                    .filter { f -> f.id == it }
-                    .first()
+                testItemTemplates.data.values.first { f -> f.id == it }
             }.toList()
 
         println("Weapon: ${itemName(weapon.id)} Ergo: ${weapon.props.ergonomics}")
@@ -64,15 +63,14 @@ class AppTest {
             .map { SlotVariant(it) }
             .forEach {
                 val found = slotVariants.find { v -> it.name == v.name }
-                if (found != null) {
-                    found.items.addAll(it.items)
-                } else {
-                    slotVariants.add(it)
+                when {
+                    found != null -> found.items.addAll(it.items)
+                    else -> slotVariants.add(it)
                 }
             }
 
         val slots = slotVariants.map { it.toSlots() }
-        val variations = permutations(slots)
+        val variations = permutations(slots).filter { isValid(testItemTemplates, weapon, it) }
         val result: MutableCollection<List<String>> = mutableListOf()
         for (variation in variations) {
             val mods = variation.filter { it.id != "EMPTY" }.map { testItemTemplates.getItem(it.id) }
@@ -94,11 +92,39 @@ class AppTest {
             val a2 = o2[1]
             compareValues(a2, a1)
         }
+        val fc: Comparator<List<String>> = Comparator { o1, o2 ->
+            val a1 = o1[2]
+            val a2 = o2[2]
+            compareValues(a1, a2)
+        }
         val stringBuilder = StringBuilder()
         val csvPrinter = CSVPrinter(stringBuilder, CSVFormat.DEFAULT)
         csvPrinter.printRecord("Ergo", "Recoil", "Mods")
-        csvPrinter.printRecords(result.sortedWith(ComparatorChain(listOf(ergoComp, recoilComp))))
+        csvPrinter.printRecords(result.sortedWith(ComparatorChain(listOf(fc))))
         println(stringBuilder.toString())
+    }
+
+    private fun isValid(items: TestItemTemplates, weapon: TestItemTemplatesData, slots: Collection<Slot>): Boolean {
+        slots.filter { it.id != "EMPTY" }.map { items.getItem(it.id) }.forEach { item ->
+            if (! goesIntoWeapon(weapon, item)) {
+                return goesToOtherSlot(items, slots, item)
+            }
+        }
+        return true
+    }
+
+    private fun goesToOtherSlot(items: TestItemTemplates, slots: Collection<Slot>, item: TestItemTemplatesData): Boolean {
+        for (slot in slots.filter { it.id != "EMPTY" }) {
+            val si = items.getItem(slot.id)
+            if (si.props.slots.isNotEmpty()) {
+                return si.props.slots.flatMap { it.props.filters }.flatMap { it.filter }.contains(item.id)
+            }
+        }
+        return false
+    }
+
+    private fun goesIntoWeapon(weapon: TestItemTemplatesData, item: TestItemTemplatesData): Boolean {
+        return weapon.props.slots.flatMap { it.props.filters }.flatMap { it.filter }.contains(item.id)
     }
 
     @Test
