@@ -41,7 +41,7 @@ fun parseLocale(project: Project, directory: File) {
     val mapper = mapper()
     val json = Files.readString(Paths.get(project.rootDir.absolutePath, "TextAsset", "TestBackendLocaleRu.bytes"))
     val tree = mapper.readTree(json)
-    val ignores = HashSetValuedHashMap<String, String>().also {
+val ignores = HashSetValuedHashMap<String, String>().also {
         it.put("TestBackendLocaleData", "mail")
         it.put("TestBackendLocaleData", "error")
         it.put("TestBackendLocaleData", "interface")
