@@ -39,11 +39,19 @@ fun <T : Any> loadBytes(name: String, clazz: Class<T>): T {
     return mapper.readValue(json, clazz)
 }
 
-fun itemName(id: String): String {
-    val mapper = mapper()
-    val json = openAsset("TestBackendLocaleEn.bytes")
-    val locale = mapper.readValue(json, TestBackendLocale::class.java)
-    return locale.data.templates[id]?.name ?: id
+object Locale {
+
+    var locale: TestBackendLocale
+
+    init {
+        val mapper = mapper()
+        val json = openAsset("TestBackendLocaleEn.bytes")
+        locale = mapper.readValue(json, TestBackendLocale::class.java)
+    }
+
+    fun itemName(id: String): String {
+        return locale.data.templates[id]?.name ?: id
+    }
 }
 
 fun TestItemTemplates.getItem(id: String): TestItemTemplatesData {

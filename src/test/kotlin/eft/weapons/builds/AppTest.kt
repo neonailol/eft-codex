@@ -3,13 +3,15 @@ package eft.weapons.builds
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonPropertyOrder
+import eft.weapons.builds.Locale.itemName
 import eft.weapons.builds.items.templates.TestBackendLocale
 import eft.weapons.builds.items.templates.TestItemTemplates
 import eft.weapons.builds.items.templates.TestItemTemplatesData
-import org.testng.collections.Lists
 import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Paths
+import java.util.LinkedList
+import kotlin.math.roundToInt
 import kotlin.test.Test
 
 class AppTest {
@@ -67,7 +69,8 @@ class AppTest {
 
         println("Weapon: ${itemName(weapon.id)} Ergo: ${weapon.props.ergonomics}")
         magazines.forEach {
-            println("Weapon: ${itemName(weapon.id)} Mag: ${itemName(it.id)} Ergo: ${weapon.props.ergonomics + it.props.ergonomics}")
+            println("Weapon: ${itemName(weapon.id)} Mag: ${itemName(it.id)} Ergo: ${weapon.props.ergonomics + it.props
+                .ergonomics}")
         }
     }
 
@@ -75,23 +78,26 @@ class AppTest {
     fun `can list all tt attachments`() {
         val testItemTemplates = loadBytes("TestItemTemplates.bytes", TestItemTemplates::class.java)
         val weapon = testItemTemplates.getItem("571a12c42459771f627b58a0")
-        val slots = weapon.props.slots.map { SlotVariant(it.name, it.props.filters.flatMap { p -> p.filter }, it.required) }
-        val variations = permutations(slots.map { it.toSlots() })
+        val slotVariants = weapon.props.slots.map { SlotVariant(it.name, it.props.filters.flatMap { p -> p.filter }, it.required) }
+        val slots = slotVariants.map { it.toSlots() }
+        val variations = permutations(slots)
         for (variation in variations) {
-            val mods = variation.map { testItemTemplates.getItem(it.id) }
+            val mods = variation.filter { it.id != "EMPTY" }.map { testItemTemplates.getItem(it.id) }
             val ergo = mods.map { it.props.ergonomics }.sum()
             val recoil = mods.map { it.props.recoil }.sum()
-            println("${weapon.props.ergonomics + ergo} | ${weapon.props.recoilForceUp * (1 + (recoil / 100))} | "
-                        + mods.map { itemName(it.id) })
+            val totalRecoil = (weapon.props.recoilForceUp * (1 + (recoil / 100))).roundToInt()
+            val totalErgo = (weapon.props.ergonomics + ergo).roundToInt()
+            val modsNames = mods.map { itemName(it.id) }
+            println("$totalErgo | $totalRecoil | $modsNames")
         }
     }
 
-    fun <T> permutations(collections: List<Collection<T>>): Collection<List<T>> {
+    fun <T> permutations(collections: List<Collection<T>>): MutableCollection<List<T>> {
         if (collections.isNullOrEmpty()) {
-            return emptyList()
+            return LinkedList()
         }
         val res: MutableCollection<List<T>> = mutableListOf()
-        permutationsImpl(collections, res, 0, mutableListOf<T>())
+        permutationsImpl(collections, res, 0, mutableListOf())
         return res
     }
 
@@ -102,7 +108,7 @@ class AppTest {
         }
         val currentCollection = ori[d]
         for (element in currentCollection) {
-            val copy = Lists.newLinkedList(current)
+            val copy = LinkedList(current)
             copy.add(element)
             permutationsImpl(ori, res, d + 1, copy)
         }
@@ -177,8 +183,12 @@ data class SlotVariant(
     val required: Boolean
 ) {
 
-    fun toSlots(): Collection<Slot> {
-        return items.map { Slot(it, name, required) }
+    fun toSlots(): MutableCollection<Slot> {
+        val toMutableList = items.map { Slot(it, name, required) }.toMutableList()
+        if (! required) {
+            toMutableList.add(Slot("EMPTY", name, required))
+        }
+        return toMutableList
     }
 }
 
