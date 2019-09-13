@@ -7,6 +7,7 @@ import eft.weapons.builds.Locale.itemName
 import eft.weapons.builds.items.templates.TestBackendLocale
 import eft.weapons.builds.items.templates.TestItemTemplates
 import eft.weapons.builds.items.templates.TestItemTemplatesData
+import org.apache.commons.collections4.comparators.ComparatorChain
 import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Paths
@@ -69,8 +70,10 @@ class AppTest {
 
         println("Weapon: ${itemName(weapon.id)} Ergo: ${weapon.props.ergonomics}")
         magazines.forEach {
-            println("Weapon: ${itemName(weapon.id)} Mag: ${itemName(it.id)} Ergo: ${weapon.props.ergonomics + it.props
-                .ergonomics}")
+            println(
+                "Weapon: ${itemName(weapon.id)} Mag: ${itemName(it.id)} Ergo: ${weapon.props.ergonomics + it.props
+                    .ergonomics}"
+            )
         }
     }
 
@@ -81,6 +84,7 @@ class AppTest {
         val slotVariants = weapon.props.slots.map { SlotVariant(it.name, it.props.filters.flatMap { p -> p.filter }, it.required) }
         val slots = slotVariants.map { it.toSlots() }
         val variations = permutations(slots)
+        val result: MutableCollection<String> = mutableListOf()
         for (variation in variations) {
             val mods = variation.filter { it.id != "EMPTY" }.map { testItemTemplates.getItem(it.id) }
             val ergo = mods.map { it.props.ergonomics }.sum()
@@ -88,8 +92,19 @@ class AppTest {
             val totalRecoil = (weapon.props.recoilForceUp * (1 + (recoil / 100))).roundToInt()
             val totalErgo = (weapon.props.ergonomics + ergo).roundToInt()
             val modsNames = mods.map { itemName(it.id) }
-            println("$totalErgo | $totalRecoil | $modsNames")
+            result.add("$totalErgo | $totalRecoil | $modsNames")
         }
+        val ergoComp: Comparator<String> = Comparator { o1, o2 ->
+            val a1 = o1.split("|")[0]
+            val a2 = o2.split("|")[0]
+            compareValues(a1, a2)
+        }
+        val recoilComp: Comparator<String> = Comparator { o1, o2 ->
+            val a1 = o1.split("|")[1]
+            val a2 = o2.split("|")[1]
+            compareValues(a1, a2)
+        }
+        result.sortedWith(ComparatorChain(listOf(ergoComp, recoilComp.reversed()))).forEach { println(it) }
     }
 
     fun <T> permutations(collections: List<Collection<T>>): MutableCollection<List<T>> {
