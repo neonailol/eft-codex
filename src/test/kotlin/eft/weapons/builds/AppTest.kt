@@ -1,15 +1,11 @@
 package eft.weapons.builds
 
-import com.fasterxml.jackson.annotation.JsonIgnore
-import com.fasterxml.jackson.annotation.JsonInclude
-import com.fasterxml.jackson.annotation.JsonPropertyOrder
 import eft.weapons.builds.Locale.itemName
 import eft.weapons.builds.items.templates.TestBackendLocale
 import eft.weapons.builds.items.templates.TestItemTemplates
-import eft.weapons.builds.items.templates.TestItemTemplatesData
+import org.apache.commons.collections4.comparators.ComparatorChain
 import org.apache.commons.csv.CSVFormat
 import org.apache.commons.csv.CSVPrinter
-import java.util.LinkedList
 import kotlin.math.roundToInt
 import kotlin.test.Test
 
@@ -26,20 +22,18 @@ class AppTest {
     }
 
     @Test
-    fun `can find all weapons`() {
+    fun `can find all pistols`() {
         val testItemTemplates = loadBytes("TestItemTemplates.bytes", TestItemTemplates::class.java)
-        testItemTemplates.data
         testItemTemplates.data.values.asSequence()
             .filter { it.parent == "5447b5cf4bdc2d65278b4567" }
-            .forEach { println(it) }
+            .sortedBy { itemName(it.id) }
+            .forEach { println("${it.id} - ${itemName(it.id)}") }
     }
 
     @Test
-    fun `can list pm attachments`() {
+    fun `can combine pm attachments`() {
         val testItemTemplates = loadBytes("TestItemTemplates.bytes", TestItemTemplates::class.java)
-        val weapon = testItemTemplates.data.values.asSequence()
-            .filter { it.id == "5448bd6b4bdc2dfc2f8b4569" }
-            .first()
+        val weapon = testItemTemplates.getItem("5448bd6b4bdc2dfc2f8b4569")
         val magazines = weapon.props.slots.asSequence()
             .filter { it.name == "mod_magazine" }
             .first().props.filters.asSequence().flatMap { it.filter.asSequence() }
@@ -52,8 +46,7 @@ class AppTest {
         println("Weapon: ${itemName(weapon.id)} Ergo: ${weapon.props.ergonomics}")
         magazines.forEach {
             println(
-                "Weapon: ${itemName(weapon.id)} Mag: ${itemName(it.id)} Ergo: ${weapon.props.ergonomics + it.props
-                    .ergonomics}"
+                "Weapon: ${itemName(weapon.id)} Mag: ${itemName(it.id)} Ergo: ${weapon.props.ergonomics + it.props.ergonomics}"
             )
         }
     }
@@ -62,15 +55,13 @@ class AppTest {
     fun `can list all tt attachments`() {
         val testItemTemplates = loadBytes("TestItemTemplates.bytes", TestItemTemplates::class.java)
         val weapon = testItemTemplates.getItem("571a12c42459771f627b58a0")
-        val slotVariants =
-            weapon.props.slots.map { SlotVariant(it.name, it.props.filters.flatMap { p -> p.filter }.toMutableList(), it.required) }
-                .toMutableList()
+        val slotVariants = weapon.props.slots.map { SlotVariant(it) }.toMutableList()
         slotVariants.flatMap { it.toSlots() }
             .filter { it.id != "EMPTY" }
             .map { testItemTemplates.getItem(it.id) }
             .filter { it.props.slots.isNotEmpty() }
             .flatMap { it.props.slots }
-            .map { SlotVariant(it.name, it.props.filters.flatMap { p -> p.filter }.toMutableList(), it.required) }
+            .map { SlotVariant(it) }
             .forEach {
                 val found = slotVariants.find { v -> it.name == v.name }
                 if (found != null) {
@@ -93,44 +84,21 @@ class AppTest {
             val res = mutableListOf(totalErgo.toString(), totalRecoil.toString()).also { it.addAll(modsNames) }
             result.add(res)
         }
-        val ergoComp: Comparator<String> = Comparator { o1, o2 ->
-            val a1 = o1.split("|")[0]
-            val a2 = o2.split("|")[0]
+        val ergoComp: Comparator<List<String>> = Comparator { o1, o2 ->
+            val a1 = o1[0]
+            val a2 = o2[0]
             compareValues(a1, a2)
         }
-        val recoilComp: Comparator<String> = Comparator { o1, o2 ->
-            val a1 = o1.split("|")[1]
-            val a2 = o2.split("|")[1]
+        val recoilComp: Comparator<List<String>> = Comparator { o1, o2 ->
+            val a1 = o1[1]
+            val a2 = o2[1]
             compareValues(a2, a1)
         }
         val stringBuilder = StringBuilder()
         val csvPrinter = CSVPrinter(stringBuilder, CSVFormat.DEFAULT)
         csvPrinter.printRecord("Ergo", "Recoil", "Mods")
-        csvPrinter.printRecords(result)
+        csvPrinter.printRecords(result.sortedWith(ComparatorChain(listOf(ergoComp, recoilComp))))
         println(stringBuilder.toString())
-//        result.sortedWith(ComparatorChain(listOf(ergoComp, recoilComp))).forEach { println(it) }
-    }
-
-    fun <T> permutations(collections: List<Collection<T>>): MutableCollection<List<T>> {
-        if (collections.isNullOrEmpty()) {
-            return LinkedList()
-        }
-        val res: MutableCollection<List<T>> = mutableListOf()
-        permutationsImpl(collections, res, 0, mutableListOf())
-        return res
-    }
-
-    fun <T> permutationsImpl(ori: List<Collection<T>>, res: MutableCollection<List<T>>, d: Int, current: List<T>) {
-        if (d == ori.size) {
-            res.add(current)
-            return
-        }
-        val currentCollection = ori[d]
-        for (element in currentCollection) {
-            val copy = LinkedList(current)
-            copy.add(element)
-            permutationsImpl(ori, res, d + 1, copy)
-        }
     }
 
     @Test
@@ -165,50 +133,4 @@ class AppTest {
 
         println(stringBuilder(tree))
     }
-
-    private fun children(
-        items: TestItemTemplates,
-        root: TestItemTemplatesData,
-        parents: List<TestItemTemplatesData>
-    ): List<ItemCategories> {
-        val children = items.data.values.asSequence()
-            .filter { it.parent == root.id }
-            .toList()
-        if (children.isEmpty()) {
-            return emptyList()
-        }
-        return children.filter { parents.any { p -> p.id == it.id } }.map { ItemCategories(it, children(items, it, parents)) }
-    }
 }
-
-@JsonPropertyOrder(value = ["rootName", "children"])
-class ItemCategories(
-    @JsonIgnore
-    val root: TestItemTemplatesData,
-    @JsonInclude(JsonInclude.Include.NON_EMPTY)
-    val children: List<ItemCategories> = listOf()
-) {
-
-    var rootName: String = root.name
-}
-
-data class SlotVariant(
-    val name: String,
-    val items: MutableCollection<String>,
-    val required: Boolean
-) {
-
-    fun toSlots(): MutableCollection<Slot> {
-        val toMutableList = items.map { Slot(it, name, required) }.toMutableList()
-        if (! required) {
-            toMutableList.add(Slot("EMPTY", name, required))
-        }
-        return toMutableList
-    }
-}
-
-data class Slot(
-    val id: String,
-    val slot: String,
-    val required: Boolean
-)
