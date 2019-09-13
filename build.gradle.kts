@@ -47,21 +47,20 @@ tasks.withType<KotlinCompile> {
 }
 
 tasks {
-    val copyResources by creating(Copy::class) {
-        from("$rootDir/TextAsset")
-        into("$buildDir/resources/main")
-        rename {
-            it.replace(".bytes", ".json")
-        }
-    }
 
-    val parseItemsFile by creating() {
+    val parseAssets by creating() {
         doLast {
             parseBytes(generatedSources, project)
         }
     }
+
+    withType(Test::class.java) {
+        useTestNG()
+        testLogging {
+            showStandardStreams = true
+            events("passed", "failed")
+        }
+    }
 }
 
-tasks["compileKotlin"].dependsOn("parseItemsFile")
-tasks["processResources"].dependsOn("copyResources")
-
+tasks["compileKotlin"].dependsOn("parseAssets")

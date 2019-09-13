@@ -9,43 +9,25 @@ import eft.weapons.builds.items.templates.TestItemTemplates
 import eft.weapons.builds.items.templates.TestItemTemplatesData
 import org.apache.commons.csv.CSVFormat
 import org.apache.commons.csv.CSVPrinter
-import java.io.InputStream
-import java.nio.file.Files
-import java.nio.file.Paths
 import java.util.LinkedList
 import kotlin.math.roundToInt
 import kotlin.test.Test
 
 class AppTest {
 
-    fun testData(name: String): InputStream {
-        val path = Paths.get(
-            Paths.get(System.getProperty("user.dir")).toString(),
-            "TextAsset",
-            name
-        )
-        return Files.newInputStream(path)
-    }
-
     @Test
     fun `can load items`() {
-        val mapper = mapper()
-        val json = testData("TestItemTemplates.bytes")
-        var testItemTemplates = mapper.readValue(json, TestItemTemplates::class.java)
+        loadBytes("TestItemTemplates.bytes", TestItemTemplates::class.java)
     }
 
     @Test
     fun `can load locale`() {
-        val mapper = mapper()
-        val json = testData("TestBackendLocaleEn.bytes")
-        var testItemTemplates = mapper.readValue(json, TestBackendLocale::class.java)
+        loadBytes("TestBackendLocaleRu.bytes", TestBackendLocale::class.java)
     }
 
     @Test
     fun `can find all weapons`() {
-        val mapper = mapper()
-        val json = testData("TestItemTemplates.bytes")
-        val testItemTemplates = mapper.readValue(json, TestItemTemplates::class.java)
+        val testItemTemplates = loadBytes("TestItemTemplates.bytes", TestItemTemplates::class.java)
         testItemTemplates.data
         testItemTemplates.data.values.asSequence()
             .filter { it.parent == "5447b5cf4bdc2d65278b4567" }
@@ -54,9 +36,7 @@ class AppTest {
 
     @Test
     fun `can list pm attachments`() {
-        val mapper = mapper()
-        val json = testData("TestItemTemplates.bytes")
-        val testItemTemplates = mapper.readValue(json, TestItemTemplates::class.java)
+        val testItemTemplates = loadBytes("TestItemTemplates.bytes", TestItemTemplates::class.java)
         val weapon = testItemTemplates.data.values.asSequence()
             .filter { it.id == "5448bd6b4bdc2dfc2f8b4569" }
             .first()
@@ -82,8 +62,9 @@ class AppTest {
     fun `can list all tt attachments`() {
         val testItemTemplates = loadBytes("TestItemTemplates.bytes", TestItemTemplates::class.java)
         val weapon = testItemTemplates.getItem("571a12c42459771f627b58a0")
-        val slotVariants = weapon.props.slots.map { SlotVariant(it.name, it.props.filters.flatMap { p -> p.filter }.toMutableList(), it.required) }
-            .toMutableList()
+        val slotVariants =
+            weapon.props.slots.map { SlotVariant(it.name, it.props.filters.flatMap { p -> p.filter }.toMutableList(), it.required) }
+                .toMutableList()
         slotVariants.flatMap { it.toSlots() }
             .filter { it.id != "EMPTY" }
             .map { testItemTemplates.getItem(it.id) }
@@ -154,9 +135,7 @@ class AppTest {
 
     @Test
     fun `list all parent types`() {
-        val mapper = mapper()
-        val json = testData("TestItemTemplates.bytes")
-        val testItemTemplates = mapper.readValue(json, TestItemTemplates::class.java)
+        val testItemTemplates = loadBytes("TestItemTemplates.bytes", TestItemTemplates::class.java)
         testItemTemplates.data.values.asSequence()
             .map { it.parent }
             .filter { it.isNotBlank() }
@@ -172,9 +151,7 @@ class AppTest {
 
     @Test
     fun `build items hierarchy`() {
-        val mapper = mapper()
-        val json = testData("TestItemTemplates.bytes")
-        val testItemTemplates = mapper.readValue(json, TestItemTemplates::class.java)
+        val testItemTemplates = loadBytes("TestItemTemplates.bytes", TestItemTemplates::class.java)
 
         val root = testItemTemplates.data.values.asSequence().filter { it.parent == "" }.first()
 

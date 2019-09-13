@@ -144,13 +144,6 @@ public fun codeGeneration(context: Context): String {
                         } else {
                             " = ${nodeType}${mapNode}()"
                         }
-                        val late = if (nodeType == "Int" || nodeType == "Double" || nodeType == "Long" || nodeType == "Boolean") {
-                            ""
-                        } else if (node.haveNullValues) {
-                            ""
-                        } else {
-                            "lateinit "
-                        }
                         val cleanName = node.name.removePrefix("is").removePrefix("_").decapitalize()
                         builder.append("    var ${cleanName}: ${nodeType}${mapNode}${nullable}${init}" + postfix)
                     }

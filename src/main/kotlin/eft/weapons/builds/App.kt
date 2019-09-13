@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.MapperFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
+import com.fasterxml.jackson.module.kotlin.readValue
 import eft.weapons.builds.items.templates.TestBackendLocale
 import eft.weapons.builds.items.templates.TestItemTemplates
 import eft.weapons.builds.items.templates.TestItemTemplatesData
@@ -11,15 +12,26 @@ import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Paths
 
+object Mapper {
+
+    private val mapper: ObjectMapper = ObjectMapper()
+        .findAndRegisterModules()
+        .setSerializationInclusion(JsonInclude.Include.NON_NULL)
+        .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true)
+        .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true)
+        .configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true)
+
+    operator fun invoke(): ObjectMapper {
+        return mapper
+    }
+}
+
 fun mapper(): ObjectMapper {
-    return ObjectMapper().findAndRegisterModules().configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true)
+    return Mapper()
 }
 
 fun stringBuilder(any: Any): String {
     return mapper()
-        .setSerializationInclusion(JsonInclude.Include.NON_NULL)
-        .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true)
-        .configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true)
         .writerWithDefaultPrettyPrinter()
         .writeValueAsString(any)
 }
@@ -33,10 +45,10 @@ fun openAsset(name: String): InputStream {
     return Files.newInputStream(path)
 }
 
-fun <T : Any> loadBytes(name: String, clazz: Class<T>): T {
+inline fun <reified T : Any> loadBytes(name: String, clazz: Class<T>): T {
     val mapper = mapper()
     val json = openAsset(name)
-    return mapper.readValue(json, clazz)
+    return mapper.readValue(json)
 }
 
 object Locale {
@@ -59,7 +71,6 @@ fun TestItemTemplates.getItem(id: String): TestItemTemplatesData {
 }
 
 fun main(args: Array<String>) {
-
     // Try PM Pistol, TT Pistol, TOZ shotgun
     println(args)
 }
