@@ -45,7 +45,7 @@ object Locale {
 
     init {
         val mapper = mapper()
-        val json = openAsset("TestBackendLocaleEn.bytes")
+        val json = openAsset("TestBackendLocaleRu.bytes")
         locale = mapper.readValue(json, TestBackendLocale::class.java)
     }
 

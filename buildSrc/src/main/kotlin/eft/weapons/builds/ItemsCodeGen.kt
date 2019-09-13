@@ -39,12 +39,13 @@ fun parseBytes(directory: File, project: Project) {
 
 fun parseLocale(project: Project, directory: File) {
     val mapper = mapper()
-    val json = Files.readString(Paths.get(project.rootDir.absolutePath, "TextAsset", "TestBackendLocaleEn.bytes"))
+    val json = Files.readString(Paths.get(project.rootDir.absolutePath, "TextAsset", "TestBackendLocaleRu.bytes"))
     val tree = mapper.readTree(json)
     val ignores = HashSetValuedHashMap<String, String>().also {
         it.put("TestBackendLocaleData", "mail")
         it.put("TestBackendLocaleData", "error")
         it.put("TestBackendLocaleData", "interface")
+        it.put("TestBackendLocaleDataTemplates", "#_val")
     }
     val context = Context(ignores)
     tree.fields().forEach {
@@ -121,7 +122,7 @@ public fun codeGeneration(context: Context): String {
                         true -> "Map"
                         false -> ""
                     }
-                    if (node.name != "Buffs") {
+                    if (node.name != "Buffs" && node.name != "#_val") {
                         val postfix = when (index) {
                             props.size - 1 -> ""
                             else -> "" + System.lineSeparator()
@@ -318,7 +319,14 @@ data class Node(
                 type = node.type
                 return
             }
+            if (type.javaClass == NullNode::class.java && node.type.javaClass == TextNode::class.java) {
+                type = node.type
+                return
+            }
             if (type.javaClass == DoubleNode::class.java && node.type.javaClass == IntNode::class.java) {
+                return
+            }
+            if (type.javaClass == TextNode::class.java && node.type.javaClass == IntNode::class.java) {
                 return
             }
             if (type.javaClass == ArrayNode::class.java && node.type.javaClass == NullNode::class.java) {
