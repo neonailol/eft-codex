@@ -148,7 +148,8 @@ class AppTest {
 //        if (true) { //59eb7ebe86f7740b373438ce
 //            throw RuntimeException()
 //        }
-        val excluded = listOf("mod_sight_rear", "mod_sight_front", "mod_scope", "mod_tactical", "mod_mount_004", "mod_magazine")
+        val excluded =
+            listOf("mod_sight_rear", "mod_sight_front", "mod_scope", "mod_tactical", "mod_mount_004", "mod_magazine", "mod_mount_000")
         val slots = slotVariants.filter { excluded.contains(it.name).not() }.map { it.toSlots() }
         val variations = permutations(slots).filter { isValidBuild(weapon, it) }.toMutableList()
         val result: MutableCollection<List<String>> = mutableListOf()

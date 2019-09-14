@@ -130,10 +130,10 @@ fun isValidBuild(
     val res = slots.filter { it.id != "EMPTY" }.map { Items[it.id] }.map { item ->
         if (conflictsWithOtherMod(item, slots)) {
             false
-        } else if (! goesIntoWeapon(weapon, item)) {
-            goesToOtherSlot(slots, item)
-        } else {
+        } else if (goesIntoWeapon(weapon, item)) {
             true
+        } else {
+            goesToOtherSlot(slots, item)
         }
     }
     return res.all { it }
@@ -152,13 +152,15 @@ fun goesToOtherSlot(
     slots: Collection<Slot>,
     item: TestItemTemplatesData
 ): Boolean {
-    for (slot in slots.filter { it.id != "EMPTY" }) {
+    val res = slots.filter { it.id != "EMPTY" }.map { slot ->
         val si = Items[slot.id]
         if (si.props.slots.isNotEmpty()) {
-            return si.props.slots.flatMap { it.props.filters }.flatMap { it.filter }.contains(item.id)
+            si.props.slots.flatMap { it.props.filters }.flatMap { it.filter }.contains(item.id)
+        } else {
+            false
         }
     }
-    return false
+    return res.any { it }
 }
 
 fun goesIntoWeapon(weapon: TestItemTemplatesData, item: TestItemTemplatesData): Boolean {
