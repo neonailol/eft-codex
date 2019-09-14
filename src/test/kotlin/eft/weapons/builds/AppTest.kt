@@ -23,56 +23,45 @@ class AppTest {
 
     @Test
     fun `can find all pistols`() {
-        val testItemTemplates = loadBytes("TestItemTemplates.bytes") as TestItemTemplates
-        testItemTemplates.data.values.asSequence()
-            .filter { it.parent == "5447b5cf4bdc2d65278b4567" }
+        Items.children("5447b5cf4bdc2d65278b4567")
             .sortedBy { itemName(it.id) }
             .forEach { println("${it.id} - ${itemName(it.id)}") }
     }
 
     @Test
     fun `list all parent types`() {
-        val testItemTemplates = loadBytes("TestItemTemplates.bytes") as TestItemTemplates
-        testItemTemplates.data.values.asSequence()
+        Items.all().asSequence()
             .map { it.parent }
             .filter { it.isNotBlank() }
             .distinct()
             .forEach {
-                val parent = testItemTemplates.data.get(it)
-                println("${parent?.id} - ${parent?.name}")
+                val parent = Items[it]
+                println("${parent.id} - ${parent.name}")
             }
-
-        val first = testItemTemplates.data.values.first { it.parent == "" }
-        println("Root: " + first.id)
+        val root = Items.all().first { it.parent == "" }
+        println("${root.id} - Root")
     }
 
     @Test
     fun `build items hierarchy`() {
-        val testItemTemplates = loadBytes("TestItemTemplates.bytes") as TestItemTemplates
-
-        val root = testItemTemplates.data.values.asSequence().filter { it.parent == "" }.first()
-
-        val parents = testItemTemplates.data.values.asSequence()
+        val root = Items.all().asSequence().filter { it.parent == "" }.first()
+        val parents = Items.all().asSequence()
             .distinctBy { it.parent }
             .filter { it.parent != "" }
-            .map { testItemTemplates.data[it.parent] !! }
+            .map { Items[it.parent] }
             .toList()
-
-        val tree = ItemCategories(root, children(testItemTemplates, root, parents))
-
+        val tree = ItemCategories(root, children(root, parents))
         println(stringBuilder(tree))
     }
 
     @Test
     fun `can combine pm attachments`() {
-        val testItemTemplates = loadBytes("TestItemTemplates.bytes") as TestItemTemplates
-        val weapon = testItemTemplates.getItem("5448bd6b4bdc2dfc2f8b4569")
+        val weapon = Items["5448bd6b4bdc2dfc2f8b4569"]
         val magazines = weapon.props.slots.asSequence()
             .filter { it.name == "mod_magazine" }
             .first().props.filters.asSequence().flatMap { it.filter.asSequence() }
-            .map {
-                testItemTemplates.data.values.first { f -> f.id == it }
-            }.toList()
+            .map { Items[it] }
+            .toList()
 
         println("Weapon: ${itemName(weapon.id)} Ergo: ${weapon.props.ergonomics}")
         magazines.forEach {
@@ -84,12 +73,11 @@ class AppTest {
 
     @Test
     fun `can list all tt attachments`() {
-        val testItemTemplates = loadBytes("TestItemTemplates.bytes") as TestItemTemplates
-        val weapon = testItemTemplates.getItem("571a12c42459771f627b58a0")
+        val weapon = Items["571a12c42459771f627b58a0"]
         val slotVariants = weapon.props.slots.map { SlotVariant(it) }.toMutableList()
         slotVariants.flatMap { it.toSlots() }
             .filter { it.id != "EMPTY" }
-            .map { testItemTemplates.getItem(it.id) }
+            .map { Items[it.id] }
             .filter { it.props.slots.isNotEmpty() }
             .flatMap { it.props.slots }
             .map { SlotVariant(it) }
@@ -102,10 +90,10 @@ class AppTest {
             }
 
         val slots = slotVariants.map { it.toSlots() }
-        val variations = permutations(slots).filter { isValidBuild(testItemTemplates, weapon, it) }.toMutableList()
+        val variations = permutations(slots).filter { isValidBuild(weapon, it) }.toMutableList()
         val result: MutableCollection<List<String>> = mutableListOf()
         for (variation in variations) {
-            val mods = variation.filter { it.id != "EMPTY" }.map { testItemTemplates.getItem(it.id) }
+            val mods = variation.filter { it.id != "EMPTY" }.map { Items[it.id] }
             val ergo = mods.map { it.props.ergonomics }.sum()
             val recoil = mods.map { it.props.recoil }.sum()
             val totalRecoil = (weapon.props.recoilForceUp * (1 + (recoil / 100))).roundToInt()

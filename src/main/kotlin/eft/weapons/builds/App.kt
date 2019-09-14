@@ -69,8 +69,24 @@ object Locale {
     }
 }
 
-fun TestItemTemplates.getItem(id: String): TestItemTemplatesData {
-    return this.data[id] ?: throw IllegalStateException("Unknown id: $id")
+object Items {
+    private val testItemTemplates = loadBytes("TestItemTemplates.bytes") as TestItemTemplates
+
+    operator fun get(id: String): TestItemTemplatesData {
+        return testItemTemplates.data[id] ?: throw IllegalStateException("Unknown id: $id")
+    }
+
+    fun children(id: String): List<TestItemTemplatesData> {
+        return testItemTemplates.data
+            .values
+            .asSequence()
+            .filter { it.parent == id }
+            .toList()
+    }
+
+    fun all(): MutableCollection<TestItemTemplatesData> {
+        return testItemTemplates.data.values
+    }
 }
 
 fun <T> permutations(collections: List<Collection<T>>): MutableCollection<MutableList<T>> {
@@ -96,31 +112,34 @@ fun <T> permutationsImpl(ori: List<Collection<T>>, res: MutableCollection<Mutabl
 }
 
 fun children(
-    items: TestItemTemplates,
     root: TestItemTemplatesData,
     parents: List<TestItemTemplatesData>
 ): List<ItemCategories> {
-    val children = items.data.values.asSequence()
-        .filter { it.parent == root.id }
-        .toList()
+    val children = Items.children(root.id)
     if (children.isEmpty()) {
         return emptyList()
     }
-    return children.filter { parents.any { p -> p.id == it.id } }.map { ItemCategories(it, children(items, it, parents)) }
+    return children.filter { parents.any { p -> p.id == it.id } }.map { ItemCategories(it, children(it, parents)) }
 }
 
-fun isValidBuild(items: TestItemTemplates, weapon: TestItemTemplatesData, slots: Collection<Slot>): Boolean {
-    slots.filter { it.id != "EMPTY" }.map { items.getItem(it.id) }.forEach { item ->
+fun isValidBuild(
+    weapon: TestItemTemplatesData,
+    slots: Collection<Slot>
+): Boolean {
+    slots.filter { it.id != "EMPTY" }.map { Items[it.id] }.forEach { item ->
         if (! goesIntoWeapon(weapon, item)) {
-            return goesToOtherSlot(items, slots, item)
+            return goesToOtherSlot(slots, item)
         }
     }
     return true
 }
 
-fun goesToOtherSlot(items: TestItemTemplates, slots: Collection<Slot>, item: TestItemTemplatesData): Boolean {
+fun goesToOtherSlot(
+    slots: Collection<Slot>,
+    item: TestItemTemplatesData
+): Boolean {
     for (slot in slots.filter { it.id != "EMPTY" }) {
-        val si = items.getItem(slot.id)
+        val si = Items[slot.id]
         if (si.props.slots.isNotEmpty()) {
             return si.props.slots.flatMap { it.props.filters }.flatMap { it.filter }.contains(item.id)
         }
