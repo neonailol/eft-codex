@@ -3,28 +3,27 @@ package eft.weapons.builds
 import eft.weapons.builds.Locale.itemName
 import eft.weapons.builds.items.templates.TestBackendLocale
 import eft.weapons.builds.items.templates.TestItemTemplates
-import eft.weapons.builds.items.templates.TestItemTemplatesData
 import org.apache.commons.collections4.comparators.ComparatorChain
 import org.apache.commons.csv.CSVFormat
 import org.apache.commons.csv.CSVPrinter
+import org.testng.annotations.Test
 import kotlin.math.roundToInt
-import kotlin.test.Test
 
 class AppTest {
 
     @Test
     fun `can load items`() {
-        loadBytes("TestItemTemplates.bytes", TestItemTemplates::class.java)
+        loadBytes("TestItemTemplates.bytes") as TestItemTemplates
     }
 
     @Test
     fun `can load locale`() {
-        loadBytes("TestBackendLocaleRu.bytes", TestBackendLocale::class.java)
+        loadBytes("TestBackendLocaleRu.bytes") as TestBackendLocale
     }
 
     @Test
     fun `can find all pistols`() {
-        val testItemTemplates = loadBytes("TestItemTemplates.bytes", TestItemTemplates::class.java)
+        val testItemTemplates = loadBytes("TestItemTemplates.bytes") as TestItemTemplates
         testItemTemplates.data.values.asSequence()
             .filter { it.parent == "5447b5cf4bdc2d65278b4567" }
             .sortedBy { itemName(it.id) }
@@ -32,8 +31,41 @@ class AppTest {
     }
 
     @Test
+    fun `list all parent types`() {
+        val testItemTemplates = loadBytes("TestItemTemplates.bytes") as TestItemTemplates
+        testItemTemplates.data.values.asSequence()
+            .map { it.parent }
+            .filter { it.isNotBlank() }
+            .distinct()
+            .forEach {
+                val parent = testItemTemplates.data.get(it)
+                println("${parent?.id} - ${parent?.name}")
+            }
+
+        val first = testItemTemplates.data.values.first { it.parent == "" }
+        println("Root: " + first.id)
+    }
+
+    @Test
+    fun `build items hierarchy`() {
+        val testItemTemplates = loadBytes("TestItemTemplates.bytes") as TestItemTemplates
+
+        val root = testItemTemplates.data.values.asSequence().filter { it.parent == "" }.first()
+
+        val parents = testItemTemplates.data.values.asSequence()
+            .distinctBy { it.parent }
+            .filter { it.parent != "" }
+            .map { testItemTemplates.data[it.parent] !! }
+            .toList()
+
+        val tree = ItemCategories(root, children(testItemTemplates, root, parents))
+
+        println(stringBuilder(tree))
+    }
+
+    @Test
     fun `can combine pm attachments`() {
-        val testItemTemplates = loadBytes("TestItemTemplates.bytes", TestItemTemplates::class.java)
+        val testItemTemplates = loadBytes("TestItemTemplates.bytes") as TestItemTemplates
         val weapon = testItemTemplates.getItem("5448bd6b4bdc2dfc2f8b4569")
         val magazines = weapon.props.slots.asSequence()
             .filter { it.name == "mod_magazine" }
@@ -52,7 +84,7 @@ class AppTest {
 
     @Test
     fun `can list all tt attachments`() {
-        val testItemTemplates = loadBytes("TestItemTemplates.bytes", TestItemTemplates::class.java)
+        val testItemTemplates = loadBytes("TestItemTemplates.bytes") as TestItemTemplates
         val weapon = testItemTemplates.getItem("571a12c42459771f627b58a0")
         val slotVariants = weapon.props.slots.map { SlotVariant(it) }.toMutableList()
         slotVariants.flatMap { it.toSlots() }
@@ -70,7 +102,7 @@ class AppTest {
             }
 
         val slots = slotVariants.map { it.toSlots() }
-        val variations = permutations(slots).filter { isValid(testItemTemplates, weapon, it) }
+        val variations = permutations(slots).filter { isValidBuild(testItemTemplates, weapon, it) }.toMutableList()
         val result: MutableCollection<List<String>> = mutableListOf()
         for (variation in variations) {
             val mods = variation.filter { it.id != "EMPTY" }.map { testItemTemplates.getItem(it.id) }
@@ -93,70 +125,23 @@ class AppTest {
             compareValues(a2, a1)
         }
         val fc: Comparator<List<String>> = Comparator { o1, o2 ->
-            val a1 = o1[2]
-            val a2 = o2[2]
-            compareValues(a1, a2)
+            for (i in 2 until o1.size) {
+                if (o2.size > i) {
+                    val compareValues = compareValues(
+                        o1[i],
+                        o2[i]
+                    )
+                    if (compareValues != 0) {
+                        return@Comparator compareValues
+                    }
+                }
+            }
+            return@Comparator 0
         }
         val stringBuilder = StringBuilder()
         val csvPrinter = CSVPrinter(stringBuilder, CSVFormat.DEFAULT)
         csvPrinter.printRecord("Ergo", "Recoil", "Mods")
         csvPrinter.printRecords(result.sortedWith(ComparatorChain(listOf(fc))))
         println(stringBuilder.toString())
-    }
-
-    private fun isValid(items: TestItemTemplates, weapon: TestItemTemplatesData, slots: Collection<Slot>): Boolean {
-        slots.filter { it.id != "EMPTY" }.map { items.getItem(it.id) }.forEach { item ->
-            if (! goesIntoWeapon(weapon, item)) {
-                return goesToOtherSlot(items, slots, item)
-            }
-        }
-        return true
-    }
-
-    private fun goesToOtherSlot(items: TestItemTemplates, slots: Collection<Slot>, item: TestItemTemplatesData): Boolean {
-        for (slot in slots.filter { it.id != "EMPTY" }) {
-            val si = items.getItem(slot.id)
-            if (si.props.slots.isNotEmpty()) {
-                return si.props.slots.flatMap { it.props.filters }.flatMap { it.filter }.contains(item.id)
-            }
-        }
-        return false
-    }
-
-    private fun goesIntoWeapon(weapon: TestItemTemplatesData, item: TestItemTemplatesData): Boolean {
-        return weapon.props.slots.flatMap { it.props.filters }.flatMap { it.filter }.contains(item.id)
-    }
-
-    @Test
-    fun `list all parent types`() {
-        val testItemTemplates = loadBytes("TestItemTemplates.bytes", TestItemTemplates::class.java)
-        testItemTemplates.data.values.asSequence()
-            .map { it.parent }
-            .filter { it.isNotBlank() }
-            .distinct()
-            .forEach {
-                val parent = testItemTemplates.data.get(it)
-                println("${parent?.id} - ${parent?.name}")
-            }
-
-        val first = testItemTemplates.data.values.first { it.parent == "" }
-        println("Root: " + first.id)
-    }
-
-    @Test
-    fun `build items hierarchy`() {
-        val testItemTemplates = loadBytes("TestItemTemplates.bytes", TestItemTemplates::class.java)
-
-        val root = testItemTemplates.data.values.asSequence().filter { it.parent == "" }.first()
-
-        val parents = testItemTemplates.data.values.asSequence()
-            .distinctBy { it.parent }
-            .filter { it.parent != "" }
-            .map { testItemTemplates.data[it.parent] !! }
-            .toList()
-
-        val tree = ItemCategories(root, children(testItemTemplates, root, parents))
-
-        println(stringBuilder(tree))
     }
 }

@@ -49,7 +49,7 @@ fun openAsset(name: String): InputStream {
     return Files.newInputStream(path)
 }
 
-inline fun <reified T : Any> loadBytes(name: String, clazz: Class<T>): T {
+inline fun <reified T : Any> loadBytes(name: String): T {
     val mapper = mapper()
     val json = openAsset(name)
     return mapper.readValue(json)
@@ -57,16 +57,15 @@ inline fun <reified T : Any> loadBytes(name: String, clazz: Class<T>): T {
 
 object Locale {
 
-    var locale: TestBackendLocale
+    private var locale: TestBackendLocale = loadBytes("TestBackendLocaleEn.bytes")
+    private val alternate: MutableMap<String, String> = HashMap()
 
     init {
-        val mapper = mapper()
-        val json = openAsset("TestBackendLocaleRu.bytes")
-        locale = mapper.readValue(json, TestBackendLocale::class.java)
+        alternate["5b3baf8f5acfc40dc5296692"] = "116mm 7.62x25 TT barrel Gold"
     }
 
     fun itemName(id: String): String {
-        return locale.data.templates[id]?.name ?: id
+        return alternate.getOrDefault(id, locale.data.templates[id]?.name) ?: id
     }
 }
 
@@ -74,16 +73,16 @@ fun TestItemTemplates.getItem(id: String): TestItemTemplatesData {
     return this.data[id] ?: throw IllegalStateException("Unknown id: $id")
 }
 
-fun <T> permutations(collections: List<Collection<T>>): MutableCollection<List<T>> {
+fun <T> permutations(collections: List<Collection<T>>): MutableCollection<MutableList<T>> {
     if (collections.isNullOrEmpty()) {
         return LinkedList()
     }
-    val res: MutableCollection<List<T>> = mutableListOf()
+    val res: MutableCollection<MutableList<T>> = mutableListOf()
     permutationsImpl(collections, res, 0, mutableListOf())
     return res
 }
 
-fun <T> permutationsImpl(ori: List<Collection<T>>, res: MutableCollection<List<T>>, d: Int, current: List<T>) {
+fun <T> permutationsImpl(ori: List<Collection<T>>, res: MutableCollection<MutableList<T>>, d: Int, current: MutableList<T>) {
     if (d == ori.size) {
         res.add(current)
         return
@@ -109,6 +108,30 @@ fun children(
     }
     return children.filter { parents.any { p -> p.id == it.id } }.map { ItemCategories(it, children(items, it, parents)) }
 }
+
+fun isValidBuild(items: TestItemTemplates, weapon: TestItemTemplatesData, slots: Collection<Slot>): Boolean {
+    slots.filter { it.id != "EMPTY" }.map { items.getItem(it.id) }.forEach { item ->
+        if (! goesIntoWeapon(weapon, item)) {
+            return goesToOtherSlot(items, slots, item)
+        }
+    }
+    return true
+}
+
+fun goesToOtherSlot(items: TestItemTemplates, slots: Collection<Slot>, item: TestItemTemplatesData): Boolean {
+    for (slot in slots.filter { it.id != "EMPTY" }) {
+        val si = items.getItem(slot.id)
+        if (si.props.slots.isNotEmpty()) {
+            return si.props.slots.flatMap { it.props.filters }.flatMap { it.filter }.contains(item.id)
+        }
+    }
+    return false
+}
+
+fun goesIntoWeapon(weapon: TestItemTemplatesData, item: TestItemTemplatesData): Boolean {
+    return weapon.props.slots.flatMap { it.props.filters }.flatMap { it.filter }.contains(item.id)
+}
+
 
 @JsonPropertyOrder(value = ["rootName", "children"])
 class ItemCategories(
@@ -147,6 +170,11 @@ data class Slot(
     val id: String,
     val slot: String,
     val required: Boolean
+)
+
+data class WeaponBuild(
+    val weapon: TestItemTemplatesData,
+    val mods: List<Slot>
 )
 
 fun main(args: Array<String>) {
