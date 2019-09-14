@@ -65,7 +65,8 @@ object Locale {
     }
 
     fun itemName(id: String): String {
-        return alternate.getOrDefault(id, locale.data.templates[id]?.name) ?: id
+        val itemName = alternate.getOrDefault(id, locale.data.templates[id]?.name) ?: id
+        return itemName.replace('\n', ' ')
     }
 }
 
@@ -126,12 +127,25 @@ fun isValidBuild(
     weapon: TestItemTemplatesData,
     slots: Collection<Slot>
 ): Boolean {
-    slots.filter { it.id != "EMPTY" }.map { Items[it.id] }.forEach { item ->
-        if (! goesIntoWeapon(weapon, item)) {
-            return goesToOtherSlot(slots, item)
+    val res = slots.filter { it.id != "EMPTY" }.map { Items[it.id] }.map { item ->
+        if (conflictsWithOtherMod(item, slots)) {
+            false
+        } else if (! goesIntoWeapon(weapon, item)) {
+            goesToOtherSlot(slots, item)
+        } else {
+            true
         }
     }
-    return true
+    return res.all { it }
+}
+
+fun conflictsWithOtherMod(item: TestItemTemplatesData, slots: Collection<Slot>): Boolean {
+    for (conflictingItem in item.props.conflictingItems) {
+        if (slots.any { it.id == conflictingItem }) {
+            return true
+        }
+    }
+    return false
 }
 
 fun goesToOtherSlot(
@@ -151,8 +165,7 @@ fun goesIntoWeapon(weapon: TestItemTemplatesData, item: TestItemTemplatesData): 
     return weapon.props.slots.flatMap { it.props.filters }.flatMap { it.filter }.contains(item.id)
 }
 
-
-@JsonPropertyOrder(value = ["rootName", "children"])
+@JsonPropertyOrder(value = ["id", "name", "children"])
 class ItemCategories(
     @JsonIgnore
     val root: TestItemTemplatesData,
@@ -160,19 +173,20 @@ class ItemCategories(
     val children: List<ItemCategories> = listOf()
 ) {
 
-    var rootName: String = root.name
+    var id: String = root.id
+    var name: String = root.name
 }
 
 data class SlotVariant(
     val name: String,
-    val items: MutableCollection<String>,
+    val items: MutableSet<String>,
     val required: Boolean
 ) {
 
     constructor(item: TestItemTemplatesDataPropsSlots) :
         this(
             item.name,
-            item.props.filters.flatMap { p -> p.filter }.toMutableList(),
+            item.props.filters.flatMap { p -> p.filter }.toMutableSet(),
             item.required
         )
 
