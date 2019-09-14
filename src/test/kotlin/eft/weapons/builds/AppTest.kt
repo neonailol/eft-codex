@@ -3,6 +3,7 @@ package eft.weapons.builds
 import eft.weapons.builds.Locale.itemName
 import eft.weapons.builds.items.templates.TestBackendLocale
 import eft.weapons.builds.items.templates.TestItemTemplates
+import eft.weapons.builds.items.templates.TestItemTemplatesData
 import org.apache.commons.collections4.comparators.ComparatorChain
 import org.apache.commons.csv.CSVFormat
 import org.apache.commons.csv.CSVPrinter
@@ -144,12 +145,22 @@ class AppTest {
         val weapon = Items["57c44b372459772d2b39b8ce"]
         val slotVariants = weapon.props.slots.map { SlotVariant(it) }.toMutableList()
         moreCombinations(slotVariants)
-//        println(stringBuilder(slotVariants))
-//        if (true) { //59eb7ebe86f7740b373438ce
-//            throw RuntimeException()
-//        }
-        val excluded =
-            listOf("mod_sight_rear", "mod_sight_front", "mod_scope", "mod_tactical", "mod_mount_004", "mod_magazine", "mod_mount_000")
+        val excluded = listOf(
+            "mod_sight_rear",
+            "mod_sight_front",
+            "mod_mount",
+            "mod_scope",
+            "mod_scope_000",
+            "mod_scope_001",
+            "mod_scope_002",
+            "mod_scope_003",
+            "mod_tactical",
+            "mod_tactical_000",
+            "mod_tactical_001",
+            "mod_flashlight",
+            "mod_mount_004",
+            "mod_magazine"
+        )
         val slots = slotVariants.filter { excluded.contains(it.name).not() }.map { it.toSlots() }
         val variations = permutations(slots).filter { isValidBuild(weapon, it) }.toMutableList()
         val result: MutableCollection<List<String>> = mutableListOf()
@@ -160,9 +171,6 @@ class AppTest {
             val totalRecoil = (weapon.props.recoilForceUp * (1 + (recoil / 100))).roundToInt()
             val totalErgo = (weapon.props.ergonomics + ergo).roundToInt()
             val modsNames = mods.map { itemName(it.id) }
-//            if (totalRecoil == 9) {
-//                println()
-//            }
             val res = mutableListOf(totalErgo.toString(), totalRecoil.toString()).also { it.addAll(modsNames) }
             result.add(res)
         }
@@ -194,15 +202,20 @@ class AppTest {
         val csvPrinter = CSVPrinter(stringBuilder, CSVFormat.DEFAULT)
         csvPrinter.printRecord("Ergo", "Recoil", "Mods")
 //        csvPrinter.printRecords(result.sortedWith(ComparatorChain(listOf(fc))))
-        csvPrinter.printRecords(result.sortedWith(recoilComp))
+        csvPrinter.printRecords(result.sortedWith(ComparatorChain(listOf(recoilComp, ergoComp))))
         println(stringBuilder.toString())
     }
 
     private fun moreCombinations(slotVariants: MutableList<SlotVariant>) {
-        slotVariants.flatMap { it.toSlots() }
-            .filter { it.id != "EMPTY" }
-            .map { Items[it.id] }
-            .filter { it.props.slots.isNotEmpty() }
+        val map = slotVariants.flatMap { it.toSlots() }.filter { it.id != "EMPTY" }.map { Items[it.id] }
+        more(map, slotVariants)
+    }
+
+    private fun more(
+        map: List<TestItemTemplatesData>,
+        slotVariants: MutableList<SlotVariant>
+    ) {
+        map.filter { it.props.slots.isNotEmpty() }
             .flatMap { it.props.slots }
             .map { SlotVariant(it) }
             .forEach {
@@ -211,11 +224,7 @@ class AppTest {
                     found != null -> found.items.addAll(it.items)
                     else -> slotVariants.add(it)
                 }
-                val map = it.items.map { i -> Items[i] }
-                    .filter { it.props.slots.isNotEmpty() }
-                    .flatMap { it.props.slots }
-                    .map { SlotVariant(it) }
-
+                more(it.items.map { n -> Items[n] }, slotVariants)
             }
     }
 }
