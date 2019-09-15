@@ -1,4 +1,4 @@
-package eft.weapons.builds
+package eft.weapons.builds.utils
 
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.MapperFeature

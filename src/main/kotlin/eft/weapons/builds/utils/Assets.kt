@@ -1,4 +1,4 @@
-package eft.weapons.builds
+package eft.weapons.builds.utils
 
 import com.fasterxml.jackson.module.kotlin.readValue
 import java.io.InputStream

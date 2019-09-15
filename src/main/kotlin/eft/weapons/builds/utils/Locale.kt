@@ -1,4 +1,4 @@
-package eft.weapons.builds
+package eft.weapons.builds.utils
 
 import eft.weapons.builds.items.templates.TestBackendLocale
 

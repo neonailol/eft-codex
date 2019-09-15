@@ -1,14 +1,16 @@
-package eft.weapons.builds
+package eft.weapons.builds.tree
 
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonPropertyOrder
-import eft.weapons.builds.ItemTreeNodeType.ITEM
-import eft.weapons.builds.ItemTreeNodeType.META
-import eft.weapons.builds.ItemTreeNodeType.ROOT
-import eft.weapons.builds.Locale.itemName
 import eft.weapons.builds.items.templates.TestItemTemplatesData
 import eft.weapons.builds.items.templates.TestItemTemplatesDataPropsSlots
 import eft.weapons.builds.items.templates.TestItemTemplatesDataPropsSlotsPropsFilters
+import eft.weapons.builds.tree.ItemTreeNodeType.ITEM
+import eft.weapons.builds.tree.ItemTreeNodeType.META
+import eft.weapons.builds.tree.ItemTreeNodeType.ROOT
+import eft.weapons.builds.utils.Items
+import eft.weapons.builds.utils.Locale.itemName
+import eft.weapons.builds.utils.isMatters
 
 fun itemTree(weapon: TestItemTemplatesData): ItemTree {
     return ItemTree(weapon, ROOT, true, children(weapon))
@@ -67,3 +69,5 @@ class ItemTree(
 }
 
 enum class ItemTreeNodeType { ROOT, META, ITEM }
+
+class TreeAlgorithm

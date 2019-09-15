@@ -1,9 +1,10 @@
-package eft.weapons.builds
+package eft.weapons.builds.categories
 
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonPropertyOrder
 import eft.weapons.builds.items.templates.TestItemTemplatesData
+import eft.weapons.builds.utils.Items
 
 @JsonPropertyOrder(value = ["id", "name", "children"])
 class ItemCategories(
@@ -25,5 +26,13 @@ fun children(
     if (children.isEmpty()) {
         return emptyList()
     }
-    return children.filter { parents.any { p -> p.id == it.id } }.map { ItemCategories(it, children(it, parents)) }
+    return children.filter { parents.any { p -> p.id == it.id } }.map {
+        ItemCategories(
+            it,
+            children(
+                it,
+                parents
+            )
+        )
+    }
 }
