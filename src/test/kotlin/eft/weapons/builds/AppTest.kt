@@ -80,4 +80,11 @@ class AppTest {
         assertThat(printBuilds(weapon, builds), equalTo(- 1))
     }
 
+    @Test
+    fun `can make aks-74un weapon tree`() {
+        val weapon = Items["583990e32459771419544dd2"]
+        val tree = itemTree(weapon)
+        println(stringBuilder(tree))
+    }
+
 }
