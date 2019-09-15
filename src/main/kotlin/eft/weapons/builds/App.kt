@@ -254,7 +254,7 @@ fun moreCombinations(
 fun printBuilds(
     weapon: TestItemTemplatesData,
     builds: List<WeaponBuild>
-) {
+): Int {
     val slots = builds.asSequence().flatMap { it.slots().asSequence() }.map { it.slot }.distinct().toList()
     val stringBuilder = StringBuilder()
     val csvPrinter = CSVPrinter(stringBuilder, CSVFormat.DEFAULT)
@@ -286,6 +286,7 @@ fun printBuilds(
     } else {
         Files.write(Files.createFile(csvFile), listOf(message))
     }
+    return message.split('\n').size
 }
 
 fun main(args: Array<String>) {
