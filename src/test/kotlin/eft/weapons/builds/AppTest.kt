@@ -60,14 +60,21 @@ class AppTest {
     @Test
     fun `can list all tt builds`() {
         val weapon = Items["571a12c42459771f627b58a0"]
-        val builds = weaponBuilds(weapon).sortedBy { it.totalRecoil() }
+        val builds = weaponBuilds(weapon)
         printBuilds(weapon, builds)
     }
 
     @Test
     fun `can list all as val builds`() {
         val weapon = Items["57c44b372459772d2b39b8ce"]
-        val builds = weaponBuilds(weapon).sortedBy { it.totalRecoil() }
+        val builds = weaponBuilds(weapon)
+        printBuilds(weapon, builds)
+    }
+
+    @Test
+    fun `can list all as aks-74un builds`() {
+        val weapon = Items["583990e32459771419544dd2"]
+        val builds = weaponBuilds(weapon)
         printBuilds(weapon, builds)
     }
 

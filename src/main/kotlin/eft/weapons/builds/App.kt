@@ -8,10 +8,12 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.module.kotlin.readValue
 import eft.weapons.builds.Locale.itemName
+import eft.weapons.builds.Locale.itemShortName
 import eft.weapons.builds.items.templates.TestBackendLocale
 import eft.weapons.builds.items.templates.TestItemTemplates
 import eft.weapons.builds.items.templates.TestItemTemplatesData
 import eft.weapons.builds.items.templates.TestItemTemplatesDataPropsSlots
+import org.apache.commons.collections4.comparators.ComparatorChain
 import org.apache.commons.csv.CSVFormat
 import org.apache.commons.csv.CSVPrinter
 import java.io.InputStream
@@ -72,6 +74,11 @@ object Locale {
         val itemName = alternate.getOrDefault(id, locale.data.templates[id]?.name) ?: id
         return itemName.replace('\n', ' ')
     }
+
+    fun itemShortName(id: String): String {
+        val itemName = alternate.getOrDefault(id, locale.data.templates[id]?.shortName) ?: id
+        return itemName.replace('\n', ' ')
+    }
 }
 
 object Items {
@@ -94,28 +101,6 @@ object Items {
     }
 }
 
-fun <T> permutations(collections: List<Collection<T>>): MutableCollection<MutableList<T>> {
-    if (collections.isNullOrEmpty()) {
-        return LinkedList()
-    }
-    val res: MutableCollection<MutableList<T>> = mutableListOf()
-    permutationsImpl(collections, res, 0, mutableListOf())
-    return res
-}
-
-fun <T> permutationsImpl(ori: List<Collection<T>>, res: MutableCollection<MutableList<T>>, d: Int, current: MutableList<T>) {
-    if (d == ori.size) {
-        res.add(current)
-        return
-    }
-    val currentCollection = ori[d]
-    for (element in currentCollection) {
-        val copy = LinkedList(current)
-        copy.add(element)
-        permutationsImpl(ori, res, d + 1, copy)
-    }
-}
-
 fun children(
     root: TestItemTemplatesData,
     parents: List<TestItemTemplatesData>
@@ -131,13 +116,11 @@ fun isValidBuild(
     weapon: TestItemTemplatesData,
     slots: Collection<Slot>
 ): Boolean {
-    val res = slots.filter { it.id != "EMPTY" }.map { Items[it.id] }.map { item ->
-        if (conflictsWithOtherMod(item, slots)) {
-            false
-        } else if (goesIntoWeapon(weapon, item)) {
-            true
-        } else {
-            goesToOtherSlot(slots, item)
+    val res = slots.asSequence().filter { it.id != "EMPTY" }.map { Items[it.id] }.map { item ->
+        when {
+            conflictsWithOtherMod(item, slots) -> false
+            goesIntoWeapon(weapon, item) -> true
+            else -> goesToOtherSlot(slots, item)
         }
     }
     return res.all { it }
@@ -156,10 +139,10 @@ fun goesToOtherSlot(
     slots: Collection<Slot>,
     item: TestItemTemplatesData
 ): Boolean {
-    val res = slots.filter { it.id != "EMPTY" }.map { slot ->
+    val res = slots.asSequence().filter { it.id != "EMPTY" }.map { slot ->
         val si = Items[slot.id]
         if (si.props.slots.isNotEmpty()) {
-            si.props.slots.flatMap { it.props.filters }.flatMap { it.filter }.contains(item.id)
+            si.props.slots.asSequence().flatMap { it.props.filters.asSequence() }.flatMap { it.filter.asSequence() }.contains(item.id)
         } else {
             false
         }
@@ -168,7 +151,7 @@ fun goesToOtherSlot(
 }
 
 fun goesIntoWeapon(weapon: TestItemTemplatesData, item: TestItemTemplatesData): Boolean {
-    return weapon.props.slots.flatMap { it.props.filters }.flatMap { it.filter }.contains(item.id)
+    return weapon.props.slots.asSequence().flatMap { it.props.filters.asSequence() }.flatMap { it.filter.asSequence() }.contains(item.id)
 }
 
 @JsonPropertyOrder(value = ["id", "name", "children"])
@@ -213,19 +196,16 @@ data class SlotVariant(
 
 fun isMatters(itemId: String): Boolean {
     val item = Items[itemId]
-    if (haveParentNamed(item, listOf("Sights", "TacticalCombo", "Flashlight", "Magazine"))) {
+    if (haveParentNamed(item, listOf("Sights", "TacticalCombo", "Flashlight", "Magazine", "Ammo", "Launcher"))) {
         return false
     }
-    if (isScopeMount(item)) {
-        return false
-    }
-    if (isTacticalOnlyMount(item)) {
+    if (isScopeOrTacticalOnlyMount(item)) {
         return false
     }
     return true
 }
 
-fun isTacticalOnlyMount(item: TestItemTemplatesData): Boolean {
+fun isScopeOrTacticalOnlyMount(item: TestItemTemplatesData): Boolean {
     if (item.props.slots.isEmpty()) {
         return false
     }
@@ -233,18 +213,7 @@ fun isTacticalOnlyMount(item: TestItemTemplatesData): Boolean {
         .flatMap { it.props.filters }
         .flatMap { it.filter }
         .map { Items[it] }
-        .all { haveParentNamed(it, listOf("TacticalCombo", "Flashlight", "Sights")) || isScopeMount(it) }
-}
-
-fun isScopeMount(item: TestItemTemplatesData): Boolean {
-    if (item.props.slots.isEmpty()) {
-        return false
-    }
-    return item.props.slots
-        .flatMap { it.props.filters }
-        .flatMap { it.filter }
-        .map { Items[it] }
-        .all { haveParentNamed(it, listOf("Sights", "TacticalCombo", "Flashlight")) || isScopeMount(it) }
+        .all { haveParentNamed(it, listOf("TacticalCombo", "Flashlight", "Sights")) || isScopeOrTacticalOnlyMount(it) }
 }
 
 fun haveParentNamed(item: TestItemTemplatesData, excluded: Collection<String>): Boolean {
@@ -297,14 +266,43 @@ data class WeaponBuild(
 
 fun weaponBuilds(weapon: TestItemTemplatesData): List<WeaponBuild> {
     val combinations = weaponCombinations(weapon).map { it.toSlots() }
-    return permutations(combinations)
-        .filter { isValidBuild(weapon, it) }
-        .toMutableList()
+    return permutations(weapon, combinations)
         .map { WeaponBuild(weapon, it) }
 }
 
+fun permutations(weapon: TestItemTemplatesData, collections: List<Collection<Slot>>): MutableCollection<MutableList<Slot>> {
+    if (collections.isNullOrEmpty()) {
+        return ArrayList()
+    }
+    val res: MutableCollection<MutableList<Slot>> = LinkedList()
+    permutationsImpl(weapon, collections, res, 0, ArrayList())
+    return res
+}
+
+fun permutationsImpl(
+    weapon: TestItemTemplatesData,
+    origin: List<Collection<Slot>>,
+    result: MutableCollection<MutableList<Slot>>,
+    depth: Int,
+    current: MutableList<Slot>
+) {
+    if (depth == origin.size) {
+        if (isValidBuild(weapon, current)) {
+            result.add(current)
+        }
+        return
+    }
+    val currentCollection = origin[depth]
+    for (element in currentCollection) {
+        val copy: ArrayList<Slot> = ArrayList(origin.size)
+        copy.addAll(current)
+        copy.add(element)
+        permutationsImpl(weapon, origin, result, depth + 1, copy)
+    }
+}
+
 fun weaponCombinations(weapon: TestItemTemplatesData): MutableList<SlotVariant> {
-    val slotVariants: MutableList<SlotVariant> = mutableListOf()
+    val slotVariants: MutableList<SlotVariant> = LinkedList()
     moreCombinations(listOf(weapon), slotVariants)
     return slotVariants.filter { it.items().isNotEmpty() }.toMutableList()
 }
@@ -317,10 +315,20 @@ fun moreCombinations(
         .flatMap { it.props.slots }
         .map { SlotVariant(it) }
         .forEach {
-            val found = slotVariants.find { v -> it.name == v.name }
-            when {
-                found != null -> found.addItems(it.items())
-                else -> slotVariants.add(it)
+            if (it.name == "mod_stock" && it.items().size == 1 && it.items().contains("5a0c59791526d8dba737bba7")) {
+                // Recoil pad from GP-25 for AK Accessory Kit
+                val pad = SlotVariant("recoil_pad", it.items(), it.required)
+                val found = slotVariants.find { v -> pad.name == v.name }
+                when {
+                    found != null -> found.addItems(pad.items())
+                    else -> slotVariants.add(pad)
+                }
+            } else {
+                val found = slotVariants.find { v -> it.name == v.name }
+                when {
+                    found != null -> found.addItems(it.items())
+                    else -> slotVariants.add(it)
+                }
             }
             moreCombinations(it.items().map { n -> Items[n] }, slotVariants)
         }
@@ -335,7 +343,11 @@ fun printBuilds(
     val csvPrinter = CSVPrinter(stringBuilder, CSVFormat.DEFAULT)
     val header = mutableListOf("Recoil", "Ergo").also { it.addAll(slots) }
     csvPrinter.printRecord(header)
-    for (build in builds) {
+    val comparator = ComparatorChain<WeaponBuild>(listOf(compareBy { it.totalRecoil() }, compareByDescending { it.totalErgo() }))
+    for (build in builds.sortedWith(comparator)) {
+        if (build.totalRecoil() == 53 && build.totalErgo() == 67) {
+            println()
+        }
         val recoil = build.totalRecoil().toString()
         val ergo = build.totalErgo().toString()
         val mods = slots.map { build.slot(it) }.map {
@@ -355,7 +367,7 @@ fun printBuilds(
         "csv"
     )
     csvDir.toFile().mkdirs()
-    val csvFile = Paths.get(csvDir.toString(), "${weapon.id}.csv")
+    val csvFile = Paths.get(csvDir.toString(), "${itemShortName(weapon.id)}.csv")
     if (csvFile.toFile().exists()) {
         Files.write(csvFile, listOf(message))
     } else {
