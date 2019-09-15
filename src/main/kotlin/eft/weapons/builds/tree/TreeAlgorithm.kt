@@ -32,7 +32,7 @@ fun children(filter: TestItemTemplatesDataPropsSlotsPropsFilters): List<ItemTree
 }
 
 @JsonPropertyOrder(value = ["id", "name", "type", "required", "children"])
-class ItemTree(
+data class ItemTree(
     val id: String,
     val name: String,
     val type: ItemTreeNodeType,
@@ -69,5 +69,3 @@ class ItemTree(
 }
 
 enum class ItemTreeNodeType { ROOT, META, ITEM }
-
-class TreeAlgorithm
