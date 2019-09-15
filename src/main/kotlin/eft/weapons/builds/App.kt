@@ -1,116 +1,16 @@
 package eft.weapons.builds
 
-import com.fasterxml.jackson.annotation.JsonIgnore
-import com.fasterxml.jackson.annotation.JsonInclude
-import com.fasterxml.jackson.annotation.JsonPropertyOrder
-import com.fasterxml.jackson.databind.MapperFeature
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.module.kotlin.readValue
 import eft.weapons.builds.Locale.itemName
 import eft.weapons.builds.Locale.itemShortName
-import eft.weapons.builds.items.templates.TestBackendLocale
-import eft.weapons.builds.items.templates.TestItemTemplates
 import eft.weapons.builds.items.templates.TestItemTemplatesData
 import eft.weapons.builds.items.templates.TestItemTemplatesDataPropsSlots
 import org.apache.commons.collections4.comparators.ComparatorChain
 import org.apache.commons.csv.CSVFormat
 import org.apache.commons.csv.CSVPrinter
-import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.util.LinkedList
 import kotlin.math.roundToInt
-
-object Mapper {
-
-    private val mapper: ObjectMapper = ObjectMapper()
-        .findAndRegisterModules()
-        .setSerializationInclusion(JsonInclude.Include.NON_NULL)
-        .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true)
-        .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true)
-        .configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true)
-
-    operator fun invoke(): ObjectMapper {
-        return mapper
-    }
-}
-
-fun mapper(): ObjectMapper {
-    return Mapper()
-}
-
-fun stringBuilder(any: Any): String {
-    return mapper()
-        .writerWithDefaultPrettyPrinter()
-        .writeValueAsString(any)
-}
-
-fun openAsset(name: String): InputStream {
-    val path = Paths.get(
-        Paths.get(System.getProperty("user.dir")).toString(),
-        "assets",
-        name
-    )
-    return Files.newInputStream(path)
-}
-
-inline fun <reified T : Any> loadBytes(name: String): T {
-    val mapper = mapper()
-    val json = openAsset(name)
-    return mapper.readValue(json)
-}
-
-object Locale {
-
-    private var locale: TestBackendLocale = loadBytes("locale.json")
-    private val alternate: MutableMap<String, String> = HashMap()
-
-    init {
-        alternate["5b3baf8f5acfc40dc5296692"] = "116mm 7.62x25 TT barrel Gold"
-    }
-
-    fun itemName(id: String): String {
-        val itemName = alternate.getOrDefault(id, locale.data.templates[id]?.name) ?: id
-        return itemName.replace('\n', ' ')
-    }
-
-    fun itemShortName(id: String): String {
-        val itemName = alternate.getOrDefault(id, locale.data.templates[id]?.shortName) ?: id
-        return itemName.replace('\n', ' ')
-    }
-}
-
-object Items {
-    private val testItemTemplates = loadBytes("items.json") as TestItemTemplates
-
-    operator fun get(id: String): TestItemTemplatesData {
-        return testItemTemplates.data[id] ?: throw IllegalStateException("Unknown id: $id")
-    }
-
-    fun children(id: String): List<TestItemTemplatesData> {
-        return testItemTemplates.data
-            .values
-            .asSequence()
-            .filter { it.parent == id }
-            .toList()
-    }
-
-    fun all(): MutableCollection<TestItemTemplatesData> {
-        return testItemTemplates.data.values
-    }
-}
-
-fun children(
-    root: TestItemTemplatesData,
-    parents: List<TestItemTemplatesData>
-): List<ItemCategories> {
-    val children = Items.children(root.id)
-    if (children.isEmpty()) {
-        return emptyList()
-    }
-    return children.filter { parents.any { p -> p.id == it.id } }.map { ItemCategories(it, children(it, parents)) }
-}
 
 fun isValidBuild(
     weapon: TestItemTemplatesData,
@@ -154,18 +54,6 @@ fun goesIntoWeapon(weapon: TestItemTemplatesData, item: TestItemTemplatesData): 
     return weapon.props.slots.asSequence().flatMap { it.props.filters.asSequence() }.flatMap { it.filter.asSequence() }.contains(item.id)
 }
 
-@JsonPropertyOrder(value = ["id", "name", "children"])
-class ItemCategories(
-    @JsonIgnore
-    val root: TestItemTemplatesData,
-    @JsonInclude(JsonInclude.Include.NON_EMPTY)
-    val children: List<ItemCategories> = listOf()
-) {
-
-    var id: String = root.id
-    var name: String = root.name
-}
-
 data class SlotVariant(
     val name: String,
     private val items: MutableSet<String>,
@@ -178,6 +66,16 @@ data class SlotVariant(
             item.props.filters.flatMap { it.filter }.filter { isMatters(it) }.toMutableSet(),
             item.required
         )
+
+    constructor(
+        parent: String,
+        items: List<TestItemTemplatesData>,
+        required: Boolean
+    ) : this(
+        parent,
+        items.map { it.id }.toMutableSet(),
+        required
+    )
 
     fun items(): MutableSet<String> = items
 
@@ -192,6 +90,20 @@ data class SlotVariant(
         }
         return toMutableList
     }
+}
+
+fun slotName(item: TestItemTemplatesData): String {
+    val itemName = Items[item.parent].name
+    if (itemName == "FlashHider" || itemName == "Silencer" || itemName == "MuzzleCombo") {
+        return "Muzzle"
+    }
+    if (item.id == "5a0c59791526d8dba737bba7") {
+        return "RecoilPad"
+    }
+    if (item.id == "59ecc28286f7746d7a68aa8c") {
+        return "StockAdapter"
+    }
+    return itemName
 }
 
 fun isMatters(itemId: String): Boolean {
@@ -236,14 +148,14 @@ data class Slot(
 
 data class WeaponBuild(
     private val weapon: TestItemTemplatesData,
-    private val slots: List<Slot>
+    private val slots: Collection<Slot>
 ) {
 
     fun weapon() = weapon
 
     fun mods() = slots.filter { it.id != "EMPTY" }.map { Items[it.id] }
 
-    fun slots() = slots
+    fun slots() = mods().map { Slot(it.id, slotName(it), false) }
 
     fun modsErgo() = mods().map { it.props.ergonomics }.sum()
 
@@ -270,11 +182,11 @@ fun weaponBuilds(weapon: TestItemTemplatesData): List<WeaponBuild> {
         .map { WeaponBuild(weapon, it) }
 }
 
-fun permutations(weapon: TestItemTemplatesData, collections: List<Collection<Slot>>): MutableCollection<MutableList<Slot>> {
+fun permutations(weapon: TestItemTemplatesData, collections: List<Collection<Slot>>): MutableCollection<Collection<Slot>> {
     if (collections.isNullOrEmpty()) {
         return ArrayList()
     }
-    val res: MutableCollection<MutableList<Slot>> = LinkedList()
+    val res: MutableCollection<Collection<Slot>> = LinkedList()
     permutationsImpl(weapon, collections, res, 0, ArrayList())
     return res
 }
@@ -282,9 +194,9 @@ fun permutations(weapon: TestItemTemplatesData, collections: List<Collection<Slo
 fun permutationsImpl(
     weapon: TestItemTemplatesData,
     origin: List<Collection<Slot>>,
-    result: MutableCollection<MutableList<Slot>>,
+    result: MutableCollection<Collection<Slot>>,
     depth: Int,
-    current: MutableList<Slot>
+    current: Collection<Slot>
 ) {
     if (depth == origin.size) {
         if (isValidBuild(weapon, current)) {
@@ -292,18 +204,23 @@ fun permutationsImpl(
         }
         return
     }
+
     val currentCollection = origin[depth]
     for (element in currentCollection) {
-        val copy: ArrayList<Slot> = ArrayList(origin.size)
-        copy.addAll(current)
-        copy.add(element)
-        permutationsImpl(weapon, origin, result, depth + 1, copy)
+        permutationsImpl(weapon, origin, result, depth + 1, current + element)
     }
 }
 
 fun weaponCombinations(weapon: TestItemTemplatesData): MutableList<SlotVariant> {
     val slotVariants: MutableList<SlotVariant> = LinkedList()
     moreCombinations(listOf(weapon), slotVariants)
+
+//    return slotVariants.filter { it.items().isNotEmpty() }
+//        .flatMap { it.items() }
+//        .map { Items[it] }
+//        .groupBy { slotName(it) }
+//        .map { SlotVariant(it.key, it.value, false) }
+//        .toMutableList()
     return slotVariants.filter { it.items().isNotEmpty() }.toMutableList()
 }
 
@@ -345,9 +262,6 @@ fun printBuilds(
     csvPrinter.printRecord(header)
     val comparator = ComparatorChain<WeaponBuild>(listOf(compareBy { it.totalRecoil() }, compareByDescending { it.totalErgo() }))
     for (build in builds.sortedWith(comparator)) {
-        if (build.totalRecoil() == 53 && build.totalErgo() == 67) {
-            println()
-        }
         val recoil = build.totalRecoil().toString()
         val ergo = build.totalErgo().toString()
         val mods = slots.map { build.slot(it) }.map {
@@ -359,7 +273,6 @@ fun printBuilds(
         csvPrinter.printRecord(mutableListOf(recoil, ergo).also { it.addAll(mods) })
     }
     val message = stringBuilder.toString()
-    println(message)
 
     val csvDir = Paths.get(
         Paths.get(System.getProperty("user.dir")).toString(),

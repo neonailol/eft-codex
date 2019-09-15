@@ -72,7 +72,7 @@ class AppTest {
     }
 
     @Test
-    fun `can list all as aks-74un builds`() {
+    fun `can list all aks-74un builds`() {
         val weapon = Items["583990e32459771419544dd2"]
         val builds = weaponBuilds(weapon)
         printBuilds(weapon, builds)
