@@ -43,7 +43,7 @@ fun stringBuilder(any: Any): String {
 fun openAsset(name: String): InputStream {
     val path = Paths.get(
         Paths.get(System.getProperty("user.dir")).toString(),
-        "TextAsset",
+        "assets",
         name
     )
     return Files.newInputStream(path)
@@ -57,7 +57,7 @@ inline fun <reified T : Any> loadBytes(name: String): T {
 
 object Locale {
 
-    private var locale: TestBackendLocale = loadBytes("TestBackendLocaleEn.bytes")
+    private var locale: TestBackendLocale = loadBytes("locale.json")
     private val alternate: MutableMap<String, String> = HashMap()
 
     init {
@@ -71,7 +71,7 @@ object Locale {
 }
 
 object Items {
-    private val testItemTemplates = loadBytes("TestItemTemplates.bytes") as TestItemTemplates
+    private val testItemTemplates = loadBytes("items.json") as TestItemTemplates
 
     operator fun get(id: String): TestItemTemplatesData {
         return testItemTemplates.data[id] ?: throw IllegalStateException("Unknown id: $id")

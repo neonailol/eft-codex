@@ -14,12 +14,12 @@ class AppTest {
 
     @Test
     fun `can load items`() {
-        loadBytes("TestItemTemplates.bytes") as TestItemTemplates
+        loadBytes("items.json") as TestItemTemplates
     }
 
     @Test
     fun `can load locale`() {
-        loadBytes("TestBackendLocaleRu.bytes") as TestBackendLocale
+        loadBytes("locale.json") as TestBackendLocale
     }
 
     @Test
@@ -161,6 +161,7 @@ class AppTest {
             "mod_mount_004",
             "mod_magazine"
         )
+        // TODO: Filter by type
         val slots = slotVariants.filter { excluded.contains(it.name).not() }.map { it.toSlots() }
         val variations = permutations(slots).filter { isValidBuild(weapon, it) }.toMutableList()
         val result: MutableCollection<List<String>> = mutableListOf()

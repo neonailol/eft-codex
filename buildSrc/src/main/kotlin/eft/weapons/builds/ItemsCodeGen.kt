@@ -39,7 +39,7 @@ fun parseBytes(directory: File, project: Project) {
 
 fun parseLocale(project: Project, directory: File) {
     val mapper = mapper()
-    val json = Files.readString(Paths.get(project.rootDir.absolutePath, "TextAsset", "TestBackendLocaleEn.bytes"))
+    val json = Files.readString(Paths.get(project.rootDir.absolutePath, "assets", "locale.json"))
     val tree = mapper.readTree(json)
 val ignores = HashSetValuedHashMap<String, String>().also {
         it.put("TestBackendLocaleData", "mail")
@@ -61,7 +61,7 @@ val ignores = HashSetValuedHashMap<String, String>().also {
 
 private fun paresItemTemplates(project: Project, directory: File) {
     val mapper = mapper()
-    val json = Files.readString(Paths.get(project.rootDir.absolutePath, "TextAsset", "TestItemTemplates.bytes"))
+    val json = Files.readString(Paths.get(project.rootDir.absolutePath, "assets", "items.json"))
     val tree = mapper.readTree(json)
     val ignores = HashSetValuedHashMap<String, String>().also {
         it.put("TestItemTemplatesDataProps", "Buffs")
