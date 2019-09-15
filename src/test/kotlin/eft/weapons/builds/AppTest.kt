@@ -92,7 +92,7 @@ class AppTest {
             .forEach {
                 val found = slotVariants.find { v -> it.name == v.name }
                 when {
-                    found != null -> found.items.addAll(it.items)
+                    found != null -> found.items().addAll(it.items())
                     else -> slotVariants.add(it)
                 }
             }
@@ -143,36 +143,13 @@ class AppTest {
     @Test
     fun `can list all as val attachments`() {
         val weapon = Items["57c44b372459772d2b39b8ce"]
-        val slotVariants = weapon.props.slots.map { SlotVariant(it) }.toMutableList()
-        moreCombinations(slotVariants)
-        val excluded = listOf(
-            "mod_sight_rear",
-            "mod_sight_front",
-            "mod_mount",
-            "mod_scope",
-            "mod_scope_000",
-            "mod_scope_001",
-            "mod_scope_002",
-            "mod_scope_003",
-            "mod_tactical",
-            "mod_tactical_000",
-            "mod_tactical_001",
-            "mod_flashlight",
-            "mod_mount_004",
-            "mod_magazine"
-        )
-        // TODO: Filter by type
-        val slots = slotVariants.filter { excluded.contains(it.name).not() }.map { it.toSlots() }
-        val variations = permutations(slots).filter { isValidBuild(weapon, it) }.toMutableList()
+        val variations = weaponBuilds(weapon)
         val result: MutableCollection<List<String>> = mutableListOf()
         for (variation in variations) {
-            val mods = variation.filter { it.id != "EMPTY" }.map { Items[it.id] }
-            val ergo = mods.map { it.props.ergonomics }.sum()
-            val recoil = mods.map { it.props.recoil }.sum()
-            val totalRecoil = (weapon.props.recoilForceUp * (1 + (recoil / 100))).roundToInt()
-            val totalErgo = (weapon.props.ergonomics + ergo).roundToInt()
-            val modsNames = mods.map { itemName(it.id) }
-            val res = mutableListOf(totalErgo.toString(), totalRecoil.toString()).also { it.addAll(modsNames) }
+            val res = mutableListOf(
+                variation.totalErgo().toString(),
+                variation.totalRecoil().toString()
+            ).also { it.addAll(variation.modsNames()) }
             result.add(res)
         }
         val ergoComp: Comparator<List<String>> = Comparator { o1, o2 ->
@@ -207,12 +184,21 @@ class AppTest {
         println(stringBuilder.toString())
     }
 
-    private fun moreCombinations(slotVariants: MutableList<SlotVariant>) {
-        val map = slotVariants.flatMap { it.toSlots() }.filter { it.id != "EMPTY" }.map { Items[it.id] }
-        more(map, slotVariants)
+    private fun weaponBuilds(weapon: TestItemTemplatesData): List<WeaponBuild> {
+        val combinations = weaponCombinations(weapon).map { it.toSlots() }
+        return permutations(combinations)
+            .filter { isValidBuild(weapon, it) }
+            .toMutableList()
+            .map { WeaponBuild(weapon, it) }
     }
 
-    private fun more(
+    private fun weaponCombinations(weapon: TestItemTemplatesData): MutableList<SlotVariant> {
+        val slotVariants: MutableList<SlotVariant> = mutableListOf()
+        moreCombinations(listOf(weapon), slotVariants)
+        return slotVariants.filter { it.items().isNotEmpty() }.toMutableList()
+    }
+
+    private fun moreCombinations(
         map: List<TestItemTemplatesData>,
         slotVariants: MutableList<SlotVariant>
     ) {
@@ -222,10 +208,10 @@ class AppTest {
             .forEach {
                 val found = slotVariants.find { v -> it.name == v.name }
                 when {
-                    found != null -> found.items.addAll(it.items)
+                    found != null -> found.addItems(it.items())
                     else -> slotVariants.add(it)
                 }
-                more(it.items.map { n -> Items[n] }, slotVariants)
+                moreCombinations(it.items().map { n -> Items[n] }, slotVariants)
             }
     }
 }

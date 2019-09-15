@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.MapperFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.module.kotlin.readValue
+import eft.weapons.builds.Locale.itemName
 import eft.weapons.builds.items.templates.TestBackendLocale
 import eft.weapons.builds.items.templates.TestItemTemplates
 import eft.weapons.builds.items.templates.TestItemTemplatesData
@@ -15,6 +16,7 @@ import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.util.LinkedList
+import kotlin.math.roundToInt
 
 object Mapper {
 
@@ -181,16 +183,22 @@ class ItemCategories(
 
 data class SlotVariant(
     val name: String,
-    val items: MutableSet<String>,
+    private val items: MutableSet<String>,
     val required: Boolean
 ) {
 
     constructor(item: TestItemTemplatesDataPropsSlots) :
         this(
             item.name,
-            item.props.filters.flatMap { p -> p.filter }.toMutableSet(),
+            item.props.filters.flatMap { it.filter }.filter { isMatters(it) }.toMutableSet(),
             item.required
         )
+
+    fun items(): MutableSet<String> = items
+
+    fun addItems(newItems: Set<String>) {
+        items.addAll(newItems.filter { isMatters(it) })
+    }
 
     fun toSlots(): MutableCollection<Slot> {
         val toMutableList = items.map { Slot(it, name, required) }.toMutableList()
@@ -201,6 +209,54 @@ data class SlotVariant(
     }
 }
 
+fun isMatters(itemId: String): Boolean {
+    val item = Items[itemId]
+    if (haveParentNamed(item, listOf("Sights", "TacticalCombo", "Flashlight", "Magazine"))) {
+        return false
+    }
+    if (isScopeMount(item)) {
+        return false
+    }
+    if (isTacticalOnlyMount(item)) {
+        return false
+    }
+    return true
+}
+
+fun isTacticalOnlyMount(item: TestItemTemplatesData): Boolean {
+    if (item.props.slots.isEmpty()) {
+        return false
+    }
+    return item.props.slots
+        .flatMap { it.props.filters }
+        .flatMap { it.filter }
+        .map { Items[it] }
+        .all { haveParentNamed(it, listOf("TacticalCombo", "Flashlight", "Sights")) || isScopeMount(it) }
+}
+
+fun isScopeMount(item: TestItemTemplatesData): Boolean {
+    if (item.props.slots.isEmpty()) {
+        return false
+    }
+    return item.props.slots
+        .flatMap { it.props.filters }
+        .flatMap { it.filter }
+        .map { Items[it] }
+        .all { haveParentNamed(it, listOf("Sights", "TacticalCombo", "Flashlight")) || isScopeMount(it) }
+}
+
+fun haveParentNamed(item: TestItemTemplatesData, excluded: Collection<String>): Boolean {
+    var parent = item.parent
+    while (parent != "") {
+        val parentItem = Items[parent]
+        if (excluded.contains(parentItem.name)) {
+            return true
+        }
+        parent = parentItem.parent
+    }
+    return false
+}
+
 data class Slot(
     val id: String,
     val slot: String,
@@ -208,9 +264,24 @@ data class Slot(
 )
 
 data class WeaponBuild(
-    val weapon: TestItemTemplatesData,
-    val mods: List<Slot>
-)
+    private val weapon: TestItemTemplatesData,
+    private val mods: List<Slot>
+) {
+
+    fun weapon() = weapon
+
+    fun mods() = mods.filter { it.id != "EMPTY" }.map { Items[it.id] }
+
+    fun modsErgo() = mods().map { it.props.ergonomics }.sum()
+
+    fun modsRecoil() = mods().map { it.props.recoil }.sum()
+
+    fun totalErgo() = (weapon.props.ergonomics + modsErgo()).roundToInt()
+
+    fun totalRecoil() = (weapon.props.recoilForceUp * (1 + (modsRecoil() / 100))).roundToInt()
+
+    fun modsNames() = mods().map { itemName(it.id) }
+}
 
 fun main(args: Array<String>) {
     // Try PM Pistol, TT Pistol, TOZ shotgun
