@@ -12,6 +12,8 @@ import eft.weapons.builds.items.templates.TestBackendLocale
 import eft.weapons.builds.items.templates.TestItemTemplates
 import eft.weapons.builds.items.templates.TestItemTemplatesData
 import eft.weapons.builds.items.templates.TestItemTemplatesDataPropsSlots
+import org.apache.commons.csv.CSVFormat
+import org.apache.commons.csv.CSVPrinter
 import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Paths
@@ -265,12 +267,14 @@ data class Slot(
 
 data class WeaponBuild(
     private val weapon: TestItemTemplatesData,
-    private val mods: List<Slot>
+    private val slots: List<Slot>
 ) {
 
     fun weapon() = weapon
 
-    fun mods() = mods.filter { it.id != "EMPTY" }.map { Items[it.id] }
+    fun mods() = slots.filter { it.id != "EMPTY" }.map { Items[it.id] }
+
+    fun slots() = slots
 
     fun modsErgo() = mods().map { it.props.ergonomics }.sum()
 
@@ -281,9 +285,84 @@ data class WeaponBuild(
     fun totalRecoil() = (weapon.props.recoilForceUp * (1 + (modsRecoil() / 100))).roundToInt()
 
     fun modsNames() = mods().map { itemName(it.id) }
+
+    fun slot(name: String): TestItemTemplatesData? {
+        return when (val slot = slots.firstOrNull { it.slot == name }?.id) {
+            null -> null
+            "EMPTY" -> null
+            else -> Items[slot]
+        }
+    }
+}
+
+fun weaponBuilds(weapon: TestItemTemplatesData): List<WeaponBuild> {
+    val combinations = weaponCombinations(weapon).map { it.toSlots() }
+    return permutations(combinations)
+        .filter { isValidBuild(weapon, it) }
+        .toMutableList()
+        .map { WeaponBuild(weapon, it) }
+}
+
+fun weaponCombinations(weapon: TestItemTemplatesData): MutableList<SlotVariant> {
+    val slotVariants: MutableList<SlotVariant> = mutableListOf()
+    moreCombinations(listOf(weapon), slotVariants)
+    return slotVariants.filter { it.items().isNotEmpty() }.toMutableList()
+}
+
+fun moreCombinations(
+    map: List<TestItemTemplatesData>,
+    slotVariants: MutableList<SlotVariant>
+) {
+    map.filter { it.props.slots.isNotEmpty() }
+        .flatMap { it.props.slots }
+        .map { SlotVariant(it) }
+        .forEach {
+            val found = slotVariants.find { v -> it.name == v.name }
+            when {
+                found != null -> found.addItems(it.items())
+                else -> slotVariants.add(it)
+            }
+            moreCombinations(it.items().map { n -> Items[n] }, slotVariants)
+        }
+}
+
+fun printBuilds(
+    weapon: TestItemTemplatesData,
+    builds: List<WeaponBuild>
+) {
+    val slots = builds.flatMap { it.slots() }.map { it.slot }.distinct()
+    val stringBuilder = StringBuilder()
+    val csvPrinter = CSVPrinter(stringBuilder, CSVFormat.DEFAULT)
+    val header = mutableListOf("Recoil", "Ergo").also { it.addAll(slots) }
+    csvPrinter.printRecord(header)
+    for (build in builds) {
+        val recoil = build.totalRecoil().toString()
+        val ergo = build.totalErgo().toString()
+        val mods = slots.map { build.slot(it) }.map {
+            when (it) {
+                null -> ""
+                else -> itemName(it.id)
+            }
+        }
+        csvPrinter.printRecord(mutableListOf(recoil, ergo).also { it.addAll(mods) })
+    }
+    val message = stringBuilder.toString()
+    println(message)
+
+    val csvDir = Paths.get(
+        Paths.get(System.getProperty("user.dir")).toString(),
+        "build",
+        "csv"
+    )
+    csvDir.toFile().mkdirs()
+    val csvFile = Paths.get(csvDir.toString(), "${weapon.id}.csv")
+    if (csvFile.toFile().exists()) {
+        Files.write(csvFile, listOf(message))
+    } else {
+        Files.write(Files.createFile(csvFile), listOf(message))
+    }
 }
 
 fun main(args: Array<String>) {
-    // Try PM Pistol, TT Pistol, TOZ shotgun
     println(args)
 }
