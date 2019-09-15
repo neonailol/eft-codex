@@ -155,7 +155,7 @@ data class WeaponBuild(
 
     fun mods() = slots.filter { it.id != "EMPTY" }.map { Items[it.id] }
 
-    fun slots() = mods().map { Slot(it.id, slotName(it), false) }
+    fun slots() = slots
 
     fun modsErgo() = mods().map { it.props.ergonomics }.sum()
 
@@ -255,7 +255,7 @@ fun printBuilds(
     weapon: TestItemTemplatesData,
     builds: List<WeaponBuild>
 ) {
-    val slots = builds.flatMap { it.slots() }.map { it.slot }.distinct()
+    val slots = builds.asSequence().flatMap { it.slots().asSequence() }.map { it.slot }.distinct().toList()
     val stringBuilder = StringBuilder()
     val csvPrinter = CSVPrinter(stringBuilder, CSVFormat.DEFAULT)
     val header = mutableListOf("Recoil", "Ergo").also { it.addAll(slots) }
