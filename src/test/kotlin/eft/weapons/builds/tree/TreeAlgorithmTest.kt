@@ -27,6 +27,9 @@ class TreeAlgorithmTest {
         val weapon = Items["583990e32459771419544dd2"]
         val tree = itemTree(weapon)
         println(stringBuilder(tree))
-        println(stringBuilder(transform(tree)))
+        val transform = transform(tree)
+        println(stringBuilder(transform))
+        val values = transform.values.toList()
+        println(stringBuilder(permutations(values)))
     }
 }

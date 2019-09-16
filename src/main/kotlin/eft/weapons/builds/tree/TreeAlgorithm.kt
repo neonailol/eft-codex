@@ -10,6 +10,7 @@ import eft.weapons.builds.tree.ItemTreeNodeType.ROOT
 import eft.weapons.builds.utils.Items
 import eft.weapons.builds.utils.Locale.itemName
 import eft.weapons.builds.utils.isMatters
+import java.util.LinkedList
 
 fun itemTree(weapon: TestItemTemplatesData): ItemTree {
     return ItemTree(weapon, "", ROOT, true, children(weapon))
@@ -93,7 +94,30 @@ fun processChildren(result: MutableMap<String, MutableSet<String>>, children: Li
             processChildren(result, child.children)
         }
     }
-}//55818af64bdc2d5b648b4570
-//57ffad2224597779db60ceb4
-//5a96724ca2750c00156aacf9
+}
 
+fun permutations(collections: List<Collection<String>>): MutableCollection<Collection<String>> {
+    if (collections.isNullOrEmpty()) {
+        return ArrayList()
+    }
+    val res: MutableCollection<Collection<String>> = LinkedList()
+    permutationsImpl(collections, res, 0, ArrayList())
+    return res
+}
+
+fun permutationsImpl(
+    origin: List<Collection<String>>,
+    result: MutableCollection<Collection<String>>,
+    depth: Int,
+    current: Collection<String>
+) {
+    if (depth == origin.size) {
+        result.add(current)
+        return
+    }
+
+    val currentCollection = origin[depth]
+    for (element in currentCollection) {
+        permutationsImpl(origin, result, depth + 1, current + element)
+    }
+}
