@@ -10,7 +10,6 @@ import eft.weapons.builds.tree.ItemTreeNodeType.ROOT
 import eft.weapons.builds.utils.Items
 import eft.weapons.builds.utils.Locale.itemName
 import eft.weapons.builds.utils.isMatters
-import java.util.LinkedList
 
 fun itemTree(weapon: TestItemTemplatesData): ItemTree {
     return ItemTree(weapon, "", ROOT, true, children(weapon))
@@ -85,6 +84,9 @@ fun processChildren(result: MutableMap<String, MutableSet<String>>, children: Li
         if (child.type == META) {
             val list = result.getOrDefault(child.id, HashSet())
             list.addAll(child.children.map { it.id })
+            if (child.required == false) {
+                list.add("EMPTY")
+            }
             result[child.id] = list
             processChildren(result, child.children)
         } else if (child.type == ITEM) {
@@ -96,28 +98,22 @@ fun processChildren(result: MutableMap<String, MutableSet<String>>, children: Li
     }
 }
 
-fun permutations(collections: List<Collection<String>>): MutableCollection<Collection<String>> {
-    if (collections.isNullOrEmpty()) {
-        return ArrayList()
-    }
-    val res: MutableCollection<Collection<String>> = LinkedList()
-    permutationsImpl(collections, res, 0, ArrayList())
-    return res
+fun permutations(collections: List<Collection<String>>) {
+    permutationsImpl(collections, 0, ArrayList())
 }
 
 fun permutationsImpl(
     origin: List<Collection<String>>,
-    result: MutableCollection<Collection<String>>,
     depth: Int,
     current: Collection<String>
 ) {
     if (depth == origin.size) {
-        result.add(current)
+//        println(current)
         return
     }
 
     val currentCollection = origin[depth]
     for (element in currentCollection) {
-        permutationsImpl(origin, result, depth + 1, current + element)
+        permutationsImpl(origin, depth + 1, current + element)
     }
 }
