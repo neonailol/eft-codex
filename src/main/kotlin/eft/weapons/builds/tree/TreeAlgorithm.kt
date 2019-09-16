@@ -8,8 +8,10 @@ import eft.weapons.builds.tree.ItemTreeNodeType.ITEM
 import eft.weapons.builds.tree.ItemTreeNodeType.META
 import eft.weapons.builds.tree.ItemTreeNodeType.ROOT
 import eft.weapons.builds.utils.Items
+import eft.weapons.builds.utils.Locale
 import eft.weapons.builds.utils.Locale.itemName
 import eft.weapons.builds.utils.isMatters
+import kotlin.math.roundToInt
 
 fun itemTree(weapon: TestItemTemplatesData): ItemTree {
     return ItemTree(weapon, "", ROOT, true, children(weapon))
@@ -98,22 +100,101 @@ fun processChildren(result: MutableMap<String, MutableSet<String>>, children: Li
     }
 }
 
-fun permutations(collections: List<Collection<String>>) {
-    permutationsImpl(collections, 0, ArrayList())
+fun permutations(writer: ResultWriter, collections: List<Collection<String>>) {
+    permutations(writer, collections.sortedBy { it.size }, 0, ArrayList())
 }
 
-fun permutationsImpl(
+fun permutations(
+    writer: ResultWriter,
     origin: List<Collection<String>>,
     depth: Int,
     current: Collection<String>
 ) {
     if (depth == origin.size) {
-//        println(current)
+        writer.writeLine(current)
         return
     }
 
     val currentCollection = origin[depth]
     for (element in currentCollection) {
-        permutationsImpl(origin, depth + 1, current + element)
+        permutations(writer, origin, depth + 1, current + element)
     }
+}
+
+fun isValidBuild(
+    weapon: TestItemTemplatesData,
+    slots: Collection<String>
+): Boolean {
+    return slots.asSequence().filter { it != "EMPTY" }.map { Items[it] }.all { item ->
+        when {
+            conflictsWithOtherMod(item, slots) -> false
+            goesIntoWeapon(weapon, item) -> true
+            else -> goesToOtherSlot(slots, item)
+        }
+    }
+}
+
+fun conflictsWithOtherMod(item: TestItemTemplatesData, slots: Collection<String>): Boolean {
+    for (conflictingItem in item.props.conflictingItems) {
+        if (slots.any { it == conflictingItem }) {
+            return true
+        }
+    }
+    return false
+}
+
+fun goesToOtherSlot(
+    slots: Collection<String>,
+    item: TestItemTemplatesData
+): Boolean {
+    return slots.asSequence().filter { it != "EMPTY" }.any { slot ->
+        val si = Items[slot]
+        if (si.props.slots.isNotEmpty()) {
+            si.props.slots.asSequence().flatMap { it.props.filters.asSequence() }.flatMap { it.filter.asSequence() }.contains(item.id)
+        } else {
+            false
+        }
+    }
+}
+
+fun goesIntoWeapon(weapon: TestItemTemplatesData, item: TestItemTemplatesData): Boolean {
+    return weapon.props.slots.asSequence().flatMap { it.props.filters.asSequence() }.flatMap { it.filter.asSequence() }.contains(item.id)
+}
+
+fun prettyPrintBuilds(weapon: TestItemTemplatesData) {
+    val validDrafts = validDraftsReader(weapon)
+    val printer = finalBuildsPrinter(weapon)
+    validDrafts.forEach { draft ->
+        val build = WeaponBuild(weapon, draft.split(','))
+        val recoil = build.totalRecoil().toString()
+        val ergo = build.totalErgo().toString()
+        if (build.totalRecoil() <= 70 && build.totalErgo() >= 70) {
+            val mods = build.modsNames()
+            printer.writeLine(mutableListOf(recoil, ergo).also { it.addAll(mods) })
+        }
+    }
+    printer.close()
+}
+
+data class WeaponBuild(
+    private val weapon: TestItemTemplatesData,
+    private val slots: Collection<String>
+) {
+
+    fun weapon() = weapon
+
+    fun mods() = slots.filter { it != "EMPTY" }.map { Items[it] }
+
+    fun slots() = slots
+
+    fun modsErgo() = mods().map { it.props.ergonomics }.sum()
+
+    fun modsRecoil() = mods().map { it.props.recoil }.sum()
+
+    fun totalErgo() = (weapon.props.ergonomics + modsErgo()).roundToInt()
+
+    fun totalRecoil() = (weapon.props.recoilForceUp * (1 + (modsRecoil() / 100))).roundToInt()
+
+    fun modsNames() = mods().map { Locale.itemName(it.id) }
+
 }

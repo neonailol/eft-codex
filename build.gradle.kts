@@ -15,6 +15,7 @@ dependencies {
     implementation(platform("org.jetbrains.kotlin:kotlin-bom"))
     implementation(platform("com.fasterxml.jackson:jackson-bom:2.9.9"))
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.1")
     implementation("org.jooq:jooq:3.12.1")
     implementation("org.xerial:sqlite-jdbc:3.28.0")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")

@@ -255,5 +255,3 @@ fun printBuilds(
     }
     return message.split('\n').size
 }
-
-class Permutations
