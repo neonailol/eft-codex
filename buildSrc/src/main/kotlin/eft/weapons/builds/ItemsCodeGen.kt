@@ -83,7 +83,7 @@ public fun codeGeneration(context: Context): String {
     builder.append("package eft.weapons.builds.items.templates" + System.lineSeparator())
     builder.append("import com.fasterxml.jackson.annotation.JsonProperty" + System.lineSeparator())
     builder.append("import com.fasterxml.jackson.annotation.JsonIgnoreProperties" + System.lineSeparator())
-    builder.append("import eft.weapons.builds.stringBuilder" + System.lineSeparator())
+    builder.append("import eft.weapons.builds.utils.stringBuilder" + System.lineSeparator())
     builder.append(System.lineSeparator())
     context.nodes()
         .asSequence()
@@ -144,7 +144,14 @@ public fun codeGeneration(context: Context): String {
                         } else {
                             " = ${nodeType}${mapNode}()"
                         }
-                        val cleanName = node.name.removePrefix("is").removePrefix("_").decapitalize()
+
+                        val cleanName = node.name
+                            .removePrefix("is")
+                            .removePrefix("_")
+                            .split("_")
+                            .map { it.capitalize() }
+                            .joinToString("")
+                            .decapitalize()
                         builder.append("    var ${cleanName}: ${nodeType}${mapNode}${nullable}${init}" + postfix)
                     }
                 }

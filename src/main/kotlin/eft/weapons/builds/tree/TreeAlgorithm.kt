@@ -11,8 +11,11 @@ import eft.weapons.builds.utils.Items
 import eft.weapons.builds.utils.Locale
 import eft.weapons.builds.utils.Locale.itemName
 import eft.weapons.builds.utils.isMatters
+import eft.weapons.builds.utils.stringBuilder
+import java.time.LocalDateTime
 import java.util.TreeSet
 import kotlin.math.roundToInt
+import kotlin.streams.asSequence
 
 fun itemTree(weapon: TestItemTemplatesData): ItemTree {
     return ItemTree(weapon, "", ROOT, true, children(weapon))
@@ -196,4 +199,33 @@ data class WeaponBuild(
 
     fun modsNames() = mods().map { Locale.itemName(it.id) }
 
+}
+
+fun weaponBuilds(weapon: TestItemTemplatesData) {
+    val resultWriter = draftPrinter(weapon)
+    val tree = itemTree(weapon)
+    println(stringBuilder(tree))
+    val transform = transform(tree)
+    println(stringBuilder(transform))
+    val values = transform.values.toList().distinct()
+    println(stringBuilder(permutations(resultWriter, values)))
+    resultWriter.close()
+    println(draftReader(weapon).count())
+    val buildsPrinter = buildsPrinter(weapon)
+    val total = draftReader(weapon).count()
+    println("total = $total")
+    var progress = 0
+    draftReader(weapon).asSequence().withIndex().forEach {
+        val newProgress = ((it.index.toDouble() / total.toDouble()) * 100).toInt()
+        if (newProgress > progress) {
+            progress = newProgress
+            println("${LocalDateTime.now()} - $progress")
+        }
+        val slots = it.value.split(',')
+        if (isValidBuild(weapon, slots)) {
+            buildsPrinter.writeLine(slots)
+        }
+    }
+    buildsPrinter.close()
+    prettyPrintBuilds(weapon)
 }
