@@ -11,6 +11,7 @@ import eft.weapons.builds.utils.Items
 import eft.weapons.builds.utils.Locale
 import eft.weapons.builds.utils.Locale.itemName
 import eft.weapons.builds.utils.isMatters
+import java.util.TreeSet
 import kotlin.math.roundToInt
 
 fun itemTree(weapon: TestItemTemplatesData): ItemTree {
@@ -84,7 +85,7 @@ fun transform(tree: ItemTree): MutableMap<String, MutableSet<String>> {
 fun processChildren(result: MutableMap<String, MutableSet<String>>, children: List<ItemTree>) {
     for (child in children) {
         if (child.type == META) {
-            val list = result.getOrDefault(child.id, HashSet())
+            val list = result.getOrDefault(child.id, TreeSet())
             list.addAll(child.children.map { it.id })
             if (child.required == false) {
                 list.add("EMPTY")
@@ -92,7 +93,7 @@ fun processChildren(result: MutableMap<String, MutableSet<String>>, children: Li
             result[child.id] = list
             processChildren(result, child.children)
         } else if (child.type == ITEM) {
-            val list = result.getOrDefault(child.parent, HashSet())
+            val list = result.getOrDefault(child.parent, TreeSet())
             list.add(child.id)
             result[child.parent] = list
             processChildren(result, child.children)
@@ -168,10 +169,8 @@ fun prettyPrintBuilds(weapon: TestItemTemplatesData) {
         val build = WeaponBuild(weapon, draft.split(','))
         val recoil = build.totalRecoil().toString()
         val ergo = build.totalErgo().toString()
-        if (build.totalRecoil() <= 70 && build.totalErgo() >= 70) {
-            val mods = build.modsNames()
-            printer.writeLine(mutableListOf(recoil, ergo).also { it.addAll(mods) })
-        }
+        val mods = build.modsNames()
+        printer.writeLine(mutableListOf(recoil, ergo).also { it.addAll(mods) })
     }
     printer.close()
 }
