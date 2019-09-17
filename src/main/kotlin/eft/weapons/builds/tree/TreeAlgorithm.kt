@@ -1,5 +1,6 @@
 package eft.weapons.builds.tree
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonPropertyOrder
 import eft.weapons.builds.items.templates.TestItemTemplatesData
@@ -10,12 +11,11 @@ import eft.weapons.builds.tree.ItemTreeNodeType.ROOT
 import eft.weapons.builds.utils.Items
 import eft.weapons.builds.utils.Locale
 import eft.weapons.builds.utils.Locale.itemName
+import eft.weapons.builds.utils.haveParentNamed
 import eft.weapons.builds.utils.isMatters
 import eft.weapons.builds.utils.stringBuilder
-import java.time.LocalDateTime
 import java.util.TreeSet
 import kotlin.math.roundToInt
-import kotlin.streams.asSequence
 
 fun itemTree(weapon: TestItemTemplatesData): ItemTree {
     return ItemTree(weapon, "", ROOT, true, children(weapon))
@@ -44,7 +44,9 @@ data class ItemTree(
     val type: ItemTreeNodeType,
     val required: Boolean,
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
-    val children: List<ItemTree>
+    val children: List<ItemTree>,
+    @JsonIgnore
+    var parentTree: ItemTree? = null
 ) {
 
     constructor(
@@ -60,7 +62,9 @@ data class ItemTree(
         type,
         required,
         children
-    )
+    ) {
+        children.forEach { it.parentTree = this }
+    }
 
     constructor(
         item: TestItemTemplatesDataPropsSlots,
@@ -74,7 +78,9 @@ data class ItemTree(
         type,
         required,
         children
-    )
+    ) {
+        children.forEach { it.parentTree = this }
+    }
 }
 
 enum class ItemTreeNodeType { ROOT, META, ITEM }
@@ -104,18 +110,18 @@ fun processChildren(result: MutableMap<String, MutableSet<String>>, children: Li
     }
 }
 
-fun permutations(writer: ResultWriter, collections: List<Collection<String>>) {
+fun permutations(writer: ResultWriter, collections: MutableList<List<Slot>>) {
     permutations(writer, collections.sortedBy { it.size }, 0, ArrayList())
 }
 
 fun permutations(
     writer: ResultWriter,
-    origin: List<Collection<String>>,
+    origin: List<Collection<Slot>>,
     depth: Int,
-    current: Collection<String>
+    current: Collection<Slot>
 ) {
     if (depth == origin.size) {
-        writer.writeLine(current)
+        writer.writeLineS(current)
         return
     }
 
@@ -201,31 +207,206 @@ data class WeaponBuild(
 
 }
 
+fun isCompleteStock(stock: Stock): Boolean {
+    val noSlots = stock.items.all { Items[it].props.slots.isEmpty() }
+
+    if (noSlots) {
+        return true
+    }
+
+    return stock.items.any { Items[it].props.slots.isEmpty() }
+}
+
+fun buildsStocks(stocks: MutableList<Stock>, root: ItemTree) {
+    for (child in root.children) {
+        if (child.type == ITEM && haveParentNamed(Items[child.id], "Stock")) {
+            stocks.add(Stock(allParentStocks(child) + child.id))
+        }
+        buildsStocks(stocks, child)
+    }
+}
+
+fun allParentStocks(child: ItemTree): List<String> {
+    val stocks: MutableList<String> = mutableListOf()
+    var current = child.parentTree
+    while (current != null) {
+        if (current.type == ITEM && haveParentNamed(Items[current.id], "Stock")) {
+            stocks.add(current.id)
+        }
+        current = current.parentTree
+    }
+    return stocks
+}
+
+data class Stock(val items: List<String>) {
+
+    fun names(): List<String> {
+        return items.map { Items[it] }.map { it.name }
+    }
+
+}
+
+private fun stocks(tree: ItemTree): List<Stock> {
+    val stocks: MutableList<Stock> = mutableListOf()
+    buildsStocks(stocks, tree)
+    val completeStocks = stocks.filter { isCompleteStock(it) }
+    println(stringBuilder(completeStocks.map { it.names() }))
+    return completeStocks
+}
+
+data class Slot(val items: Set<String>) {
+    fun names(): List<String> {
+        return items.map { Items[it] }.map { it.name }
+    }
+}
+
+fun foregrips(tree: ItemTree): List<Foregrip> {
+    val grips: MutableList<Foregrip> = mutableListOf()
+    buildsForegrips(grips, tree)
+    println(stringBuilder(grips.map { it.names() }))
+    return grips
+}
+
+fun buildsForegrips(grips: MutableList<Foregrip>, root: ItemTree) {
+    for (child in root.children) {
+        if (child.type == ITEM && haveParentNamed(Items[child.id], "Foregrip")) {
+            grips.add(Foregrip(allParentMounts(child) + child.id))
+        }
+        buildsForegrips(grips, child)
+    }
+}
+
+fun allParentMounts(child: ItemTree): List<String> {
+    val grips: MutableList<String> = mutableListOf()
+    var current = child.parentTree
+    while (current != null) {
+        if (current.type == ITEM && haveParentNamed(Items[current.id], "Mount")) {
+            grips.add(current.id)
+        }
+        current = current.parentTree
+    }
+    return grips
+}
+
+data class Foregrip(val items: List<String>) {
+    fun names(): List<String> {
+        return items.map { Items[it] }.map { it.name }
+    }
+}
+
+fun handguards(tree: ItemTree): List<Slot> {
+    val guards: MutableList<String> = mutableListOf()
+    buildsHandguards(guards, tree)
+    return guards.distinct().map { Slot(setOf(it)) }
+}
+
+fun buildsHandguards(guard: MutableList<String>, root: ItemTree) {
+    for (child in root.children) {
+        if (child.type == ITEM && haveParentNamed(Items[child.id], "Handguard")) {
+            guard.add(child.id)
+        }
+        buildsHandguards(guard, child)
+    }
+}
+
+data class Muzzle(val items: List<String>) {
+
+    fun names(): List<String> {
+        return items.map { Items[it] }.map { it.name }
+    }
+
+}
+
+fun muzzles(tree: ItemTree): List<Muzzle> {
+    val muzzles: MutableList<Muzzle> = mutableListOf()
+    buildsMuzzles(muzzles, tree)
+    val completeStocks = muzzles.filter { isCompleteMuzzle(it) }
+    println(stringBuilder(completeStocks.map { it.names() }))
+    return completeStocks
+}
+
+fun buildsMuzzles(stocks: MutableList<Muzzle>, root: ItemTree) {
+    for (child in root.children) {
+        if (child.type == ITEM && haveParentNamed(Items[child.id], "Muzzle")) {
+            stocks.add(Muzzle(allParentMuzzles(child) + child.id))
+        }
+        buildsMuzzles(stocks, child)
+    }
+}
+
+fun isCompleteMuzzle(muzzle: Muzzle): Boolean {
+    val noSlots = muzzle.items.all { Items[it].props.slots.isEmpty() }
+
+    if (noSlots) {
+        return true
+    }
+
+    return muzzle.items.any { Items[it].props.slots.isEmpty() }
+}
+
+fun allParentMuzzles(child: ItemTree): List<String> {
+    val stocks: MutableList<String> = mutableListOf()
+    var current = child.parentTree
+    while (current != null) {
+        if (current.type == ITEM && haveParentNamed(Items[current.id], "Muzzle")) {
+            stocks.add(current.id)
+        }
+        current = current.parentTree
+    }
+    return stocks
+}
+
 fun weaponBuilds(weapon: TestItemTemplatesData) {
     val resultWriter = draftPrinter(weapon)
     val tree = itemTree(weapon)
     println(stringBuilder(tree))
+    val completeStocks = stocks(tree)
+    val completeForegrips = foregrips(tree)
+    val completeHandguards = handguards(tree)
+    val completeMuzzles = muzzles(tree)
     val transform = transform(tree)
     println(stringBuilder(transform))
-    val values = transform.values.toList().distinct()
-    println(stringBuilder(permutations(resultWriter, values)))
-    resultWriter.close()
-    println(draftReader(weapon).count())
-    val buildsPrinter = buildsPrinter(weapon)
-    val total = draftReader(weapon).count()
-    println("total = $total")
-    var progress = 0
-    draftReader(weapon).asSequence().withIndex().forEach {
-        val newProgress = ((it.index.toDouble() / total.toDouble()) * 100).toInt()
-        if (newProgress > progress) {
-            progress = newProgress
-            println("${LocalDateTime.now()} - $progress")
-        }
-        val slots = it.value.split(',')
-        if (isValidBuild(weapon, slots)) {
-            buildsPrinter.writeLine(slots)
+    transform.values.forEach { set ->
+        set.removeIf { it != "EMPTY" && haveParentNamed(Items[it], "Stock") }
+        set.removeIf { it != "EMPTY" && haveParentNamed(Items[it], listOf("Mount", "Foregrip")) }
+        set.removeIf { it != "EMPTY" && haveParentNamed(Items[it], listOf("Handguard")) }
+        set.removeIf { it != "EMPTY" && haveParentNamed(Items[it], listOf("Muzzle")) }
+    }
+    val values = transform.values.toList()
+        .distinct()
+        .filter { it.isNotEmpty() }
+        .filter { ! (it.size == 1 && it.contains("EMPTY")) }
+        .toMutableList()
+    val list = values.map { v -> v.map { i -> Slot(setOf(i)) } }.toMutableList()
+    list.add(completeStocks.map { Slot(it.items.toSet()) } + Slot(setOf("EMPTY")))
+    list.add(completeForegrips.map { Slot(it.items.toSet()) } + Slot(setOf("EMPTY")))
+    list.add(completeHandguards.map { Slot(it.items.toSet()) } + Slot(setOf("EMPTY")))
+    list.add(completeMuzzles.map { Slot(it.items.toSet()) } + Slot(setOf("EMPTY")))
+    list.forEach { l ->
+        l.forEach { s ->
+            val build = WeaponBuild(weapon, s.items)
+            println("${build.modsRecoil()} - ${build.modsNames()}")
         }
     }
-    buildsPrinter.close()
-    prettyPrintBuilds(weapon)
+
+//    println(stringBuilder(permutations(resultWriter, list)))
+//    resultWriter.close()
+//    println(draftReader(weapon).count())
+//    val buildsPrinter = buildsPrinter(weapon)
+//    val total = draftReader(weapon).count()
+//    println("total = $total")
+//    var progress = 0
+//    draftReader(weapon).asSequence().withIndex().forEach {
+//        val newProgress = ((it.index.toDouble() / total.toDouble()) * 100).toInt()
+//        if (newProgress > progress) {
+//            progress = newProgress
+//            println("${LocalDateTime.now()} - $progress")
+//        }
+//        val slots = it.value.split(',')
+//        if (isValidBuild(weapon, slots)) {
+//            buildsPrinter.writeLine(slots)
+//        }
+//    }
+//    buildsPrinter.close()
+//    prettyPrintBuilds(weapon)
 }

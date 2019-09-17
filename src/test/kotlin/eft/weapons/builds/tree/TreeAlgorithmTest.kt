@@ -23,4 +23,10 @@ class TreeAlgorithmTest {
         weaponBuilds(weapon)
     }
 
+    @Test
+    fun `can make all ak-74n builds`() {
+        val weapon = Items["5644bd2b4bdc2d3b4c8b4572"]
+        weaponBuilds(weapon)
+    }
+
 }

@@ -15,6 +15,10 @@ class ResultWriter(private val csvPrinter: CSVPrinter) {
         csvPrinter.printRecord(items.filter { it != "EMPTY" })
     }
 
+    fun writeLineS(items: Collection<Slot>) {
+        csvPrinter.printRecord(items.flatMap { it.items }.filter { it != "EMPTY" })
+    }
+
     fun close() {
         csvPrinter.close(true)
     }

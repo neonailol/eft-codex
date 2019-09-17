@@ -6,7 +6,7 @@ fun isMatters(itemId: String): Boolean {
     val item = Items[itemId]
     if (haveParentNamed(
             item,
-            listOf("Sights", "TacticalCombo", "Flashlight", "Magazine", "Ammo", "Launcher")
+            listOf("Sights", "TacticalCombo", "Flashlight", "Magazine", "Ammo", "Launcher", "Charge")
         )
     ) {
         return false
@@ -15,6 +15,10 @@ fun isMatters(itemId: String): Boolean {
         return false
     }
     return true
+}
+
+fun haveParentNamed(item: TestItemTemplatesData, excluded: String): Boolean {
+    return haveParentNamed(item, listOf(excluded))
 }
 
 fun haveParentNamed(item: TestItemTemplatesData, excluded: Collection<String>): Boolean {
