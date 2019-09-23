@@ -78,7 +78,7 @@ fun processAsset(directory: File, asset: String, name: String, ignores: MultiVal
     val tree = mapper.readTree(json)
     val context = Context(ignores)
     tree.fields().forEach {
-        val rootNode = context.addNode(Node(name, it.key, it.value, isMapNode(it.value)))
+        val rootNode = context.addNode(Node(name, it.key, it.value, isMapNode(it.value), false))
         if (it.value.isContainerNode) {
             putIntoContext(context, rootNode, it)
         }
@@ -95,7 +95,7 @@ fun processAssets(directory: File, assets: Collection<String>, name: String, ign
         val json = openAsset(asset)
         val tree = mapper.readTree(json)
         tree.fields().forEach {
-            val rootNode = context.addNode(Node(name, it.key, it.value, isMapNode(it.value)))
+            val rootNode = context.addNode(Node(name, it.key, it.value, isMapNode(it.value), false))
             if (it.value.isContainerNode) {
                 putIntoContext(context, rootNode, it)
             }
@@ -133,18 +133,23 @@ fun codeGeneration(context: Context): String {
                     props[0].type is IntNode -> "Int"
                     else -> clazzName
                 }
-                if (props[0].type is ArrayNode) {
-                    builder.append("class ${clazzName}Map : ArrayList<${type}>() {" + System.lineSeparator())
+                if (props[0].array) {
+                    builder.append("class $clazzName : ArrayList<${type}Array>() {" + System.lineSeparator())
                     builder.append("    override fun toString(): String = stringBuilder(this)" + System.lineSeparator())
                     builder.append("}" + System.lineSeparator() + System.lineSeparator())
                 } else {
-                    builder.append("class ${clazzName}Map : HashMap<String, ${type}>() {" + System.lineSeparator())
+                    if (props[0].type is ArrayNode) {
+                        builder.append("class ${clazzName}Map : HashMap<String, ${type}Data>() {" + System.lineSeparator())
+                    } else {
+                        builder.append("class ${clazzName}Map : HashMap<String, ${type}>() {" + System.lineSeparator())
+                    }
+
                     builder.append("    override fun toString(): String = stringBuilder(this)" + System.lineSeparator())
                     builder.append("}" + System.lineSeparator() + System.lineSeparator())
                 }
 
             } else {
-                builder.append("class ${clazzName} {" + System.lineSeparator())
+                builder.append("class $clazzName {" + System.lineSeparator())
                 props.forEachIndexed { index, node ->
 
                     val nodeType = when (node.typeString()) {
@@ -153,9 +158,9 @@ fun codeGeneration(context: Context): String {
                         else -> node.typeString()
                     }
 
-                    val mapNode = when (node.mapNode) {
-                        true -> "Map"
-                        false -> ""
+                    val mapNode = when {
+                        node.mapNode -> "Map"
+                        else -> ""
                     }
                     if (node.name != "Buffs" && node.name != "#_val") {
                         val postfix = when (index) {
@@ -241,7 +246,7 @@ fun putIntoContext(
             true -> true
             false -> isMapNode(it.value)
         }
-        val node = context.addNode(Node(rootNode.prefix + "#" + rootNode.name, nodeName, it.value, isMapNode))
+        val node = context.addNode(Node(rootNode.prefix + "#" + rootNode.name, nodeName, it.value, isMapNode, false))
         if (it.value.isContainerNode) {
             if (it.value.isObject) {
                 putIntoContext(context, node, it)
@@ -253,7 +258,7 @@ fun putIntoContext(
         }
     }
     if (entry.value.isArray) {
-        val node = context.addNode(Node(rootNode.prefix + "#" + "Data", "", entry.value, true))
+        val node = context.addNode(Node(rootNode.prefix + "#" + "Data", "Array", entry.value, true, true))
         entry.value.forEach {
             putIntoContext(context, node, MapEntry(node.name, it))
         }
@@ -317,7 +322,8 @@ data class Node(
     val prefix: String,
     val name: String,
     var type: JsonNode,
-    val mapNode: Boolean = false
+    val mapNode: Boolean = false,
+    val array: Boolean
 ) {
 
     var haveNullValues = type.isNull
