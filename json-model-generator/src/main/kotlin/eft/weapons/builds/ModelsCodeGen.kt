@@ -35,7 +35,7 @@ fun openAsset(name: String): InputStream {
     return Context::class.java.getResourceAsStream("/$name")
 }
 
-public fun parseBytes(directory: File) {
+fun parseBytes(directory: File) {
     cleanGenerated(directory)
     paresItemTemplates(directory)
     parseLocale(directory)
@@ -190,7 +190,7 @@ private fun className(clazz: String): String {
         .joinToString("")
 }
 
-public fun putIntoContext(
+fun putIntoContext(
     context: Context,
     rootNode: Node,
     entry: Map.Entry<String, JsonNode>
@@ -198,44 +198,33 @@ public fun putIntoContext(
     if (context.shouldSkip(rootNode)) {
         return
     }
-    if (isMapNode(entry.value)) {
-        entry.value.fields().forEach {
-            val node = context.addNode(Node(rootNode.prefix + "#" + rootNode.name, "", it.value, true))
-            if (it.value.isContainerNode) {
-                if (it.value.isObject) {
-                    putIntoContext(context, node, it)
-                } else if (it.value.isArray) {
-                    it.value.iterator().forEach { child ->
-                        putIntoContext(context, node, object : Map.Entry<String, JsonNode> {
-                            override val key: String
-                                get() = node.name
-                            override val value: JsonNode
-                                get() = child
-                        })
-                    }
-                }
-            }
+    val isRootMapNode = isMapNode(entry.value)
+
+    entry.value.fields().forEach {
+        val nodeName: String = when (isRootMapNode) {
+            true -> ""
+            false -> it.key
         }
-    } else {
-        entry.value.fields().forEach {
-            val node = context.addNode(Node(rootNode.prefix + "#" + rootNode.name, it.key, it.value, isMapNode(it.value)))
-            if (it.value.isContainerNode) {
-                if (it.value.isObject) {
-                    putIntoContext(context, node, it)
-                } else if (it.value.isArray) {
-                    it.value.iterator().forEach { child ->
-                        putIntoContext(context, node, object : Map.Entry<String, JsonNode> {
-                            override val key: String
-                                get() = node.name
-                            override val value: JsonNode
-                                get() = child
-                        })
-                    }
+        val isMapNode: Boolean = when (isRootMapNode) {
+            true -> true
+            false -> isMapNode(it.value)
+        }
+        val node = context.addNode(Node(rootNode.prefix + "#" + rootNode.name, nodeName, it.value, isMapNode))
+        if (it.value.isContainerNode) {
+            if (it.value.isObject) {
+                putIntoContext(context, node, it)
+            } else if (it.value.isArray) {
+                it.value.iterator().forEach { child ->
+                    putIntoContext(context, node, object : Map.Entry<String, JsonNode> {
+                        override val key: String
+                            get() = node.name
+                        override val value: JsonNode
+                            get() = child
+                    })
                 }
             }
         }
     }
-
 }
 
 fun isMapNode(node: JsonNode): Boolean {

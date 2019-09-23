@@ -12,14 +12,14 @@ import javax.lang.model.SourceVersion
 import javax.lang.model.element.TypeElement
 import javax.tools.Diagnostic
 
-@Target(AnnotationTarget.CLASS)
-annotation class ImportAssetDefinition
+@Target(AnnotationTarget.FUNCTION)
+annotation class BuildModels
 
 @AutoService(Processor::class)
 @SupportedSourceVersion(SourceVersion.RELEASE_11)
-@SupportedAnnotationTypes("eft.weapons.builds.ImportAssetDefinition")
-@SupportedOptions(ImportAssetDefinitionAnnotationProcessor.KAPT_KOTLIN_GENERATED_OPTION_NAME)
-class ImportAssetDefinitionAnnotationProcessor : AbstractProcessor() {
+@SupportedAnnotationTypes("eft.weapons.builds.BuildModels")
+@SupportedOptions(BuildModelsAnnotationProcessor.KAPT_KOTLIN_GENERATED_OPTION_NAME)
+class BuildModelsAnnotationProcessor : AbstractProcessor() {
 
     companion object {
         const val KAPT_KOTLIN_GENERATED_OPTION_NAME = "kapt.kotlin.generated"
@@ -27,7 +27,7 @@ class ImportAssetDefinitionAnnotationProcessor : AbstractProcessor() {
 
     override fun process(annotations: MutableSet<out TypeElement>, roundEnv: RoundEnvironment): Boolean {
 
-        val annotatedElements = roundEnv.getElementsAnnotatedWith(ImportAssetDefinition::class.java)
+        val annotatedElements = roundEnv.getElementsAnnotatedWith(BuildModels::class.java)
         if (annotatedElements.isEmpty()) return false
 
         val kaptKotlinGeneratedDir = processingEnv.options[KAPT_KOTLIN_GENERATED_OPTION_NAME] ?: run {
