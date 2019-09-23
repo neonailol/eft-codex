@@ -1,11 +1,6 @@
 package eft.weapons.builds
 
 import com.google.auto.service.AutoService
-import org.yanex.takenoko.PrettyPrinter
-import org.yanex.takenoko.PrettyPrinterConfiguration
-import org.yanex.takenoko.getterExpression
-import org.yanex.takenoko.kotlinFile
-import org.yanex.takenoko.receiverType
 import java.io.File
 import javax.annotation.processing.AbstractProcessor
 import javax.annotation.processing.Processor
@@ -14,7 +9,6 @@ import javax.annotation.processing.SupportedAnnotationTypes
 import javax.annotation.processing.SupportedOptions
 import javax.annotation.processing.SupportedSourceVersion
 import javax.lang.model.SourceVersion
-import javax.lang.model.element.Element
 import javax.lang.model.element.TypeElement
 import javax.tools.Diagnostic
 
@@ -24,8 +18,8 @@ annotation class ImportAssetDefinition
 @AutoService(Processor::class)
 @SupportedSourceVersion(SourceVersion.RELEASE_11)
 @SupportedAnnotationTypes("eft.weapons.builds.ImportAssetDefinition")
-@SupportedOptions(AnnotationProcessor.KAPT_KOTLIN_GENERATED_OPTION_NAME)
-class AnnotationProcessor : AbstractProcessor() {
+@SupportedOptions(ImportAssetDefinitionAnnotationProcessor.KAPT_KOTLIN_GENERATED_OPTION_NAME)
+class ImportAssetDefinitionAnnotationProcessor : AbstractProcessor() {
 
     companion object {
         const val KAPT_KOTLIN_GENERATED_OPTION_NAME = "kapt.kotlin.generated"
@@ -41,31 +35,8 @@ class AnnotationProcessor : AbstractProcessor() {
             return false
         }
 
-        val generatedKtFile = kotlinFile("test.generated") {
-            for (element in annotatedElements) {
-                val typeElement = element.toTypeElementOrNull() ?: continue
-
-                property("simpleClassName") {
-                    receiverType(typeElement.qualifiedName.toString())
-                    getterExpression("this::class.java.simpleName")
-                }
-            }
-        }
-
-        File(kaptKotlinGeneratedDir, "testGenerated.kt").apply {
-            parentFile.mkdirs()
-            writeText(generatedKtFile.accept(PrettyPrinter(PrettyPrinterConfiguration())))
-        }
+        parseBytes(File(kaptKotlinGeneratedDir))
 
         return true
-    }
-
-    fun Element.toTypeElementOrNull(): TypeElement? {
-        if (this !is TypeElement) {
-            processingEnv.messager.printMessage(Diagnostic.Kind.ERROR, "Invalid element type, class expected", this)
-            return null
-        }
-
-        return this
     }
 }

@@ -1,4 +1,3 @@
-import eft.weapons.builds.parseBytes
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
@@ -55,12 +54,6 @@ tasks.withType<KotlinCompile> {
 
 tasks {
 
-    val parseAssets by creating() {
-        doLast {
-            parseBytes(generatedSources, project)
-        }
-    }
-
     withType(Test::class.java) {
         useTestNG()
         testLogging {
@@ -69,5 +62,3 @@ tasks {
         }
     }
 }
-
-tasks["compileKotlin"].dependsOn("parseAssets")

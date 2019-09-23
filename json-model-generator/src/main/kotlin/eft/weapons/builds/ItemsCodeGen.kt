@@ -21,8 +21,8 @@ import org.apache.commons.collections4.multimap.HashSetValuedHashMap
 import org.apache.commons.lang3.builder.ToStringBuilder
 import org.apache.commons.lang3.builder.ToStringStyle
 import org.apache.commons.text.WordUtils
-import org.gradle.api.Project
 import java.io.File
+import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -31,17 +31,21 @@ fun mapper(): ObjectMapper {
     return ObjectMapper().findAndRegisterModules()
 }
 
-fun parseBytes(directory: File, project: Project) {
-    cleanGenerated(directory)
-    paresItemTemplates(project, directory)
-    parseLocale(project, directory)
+fun openAsset(name: String): InputStream {
+    return Context::class.java.getResourceAsStream("/$name")
 }
 
-fun parseLocale(project: Project, directory: File) {
+public fun parseBytes(directory: File) {
+    cleanGenerated(directory)
+    paresItemTemplates(directory)
+    parseLocale(directory)
+}
+
+fun parseLocale(directory: File) {
     val mapper = mapper()
-    val json = Files.readString(Paths.get(project.rootDir.absolutePath, "assets", "locale.json"))
+    val json = openAsset("locale.json")
     val tree = mapper.readTree(json)
-val ignores = HashSetValuedHashMap<String, String>().also {
+    val ignores = HashSetValuedHashMap<String, String>().also {
         it.put("TestBackendLocaleData", "mail")
         it.put("TestBackendLocaleData", "error")
         it.put("TestBackendLocaleData", "interface")
@@ -59,9 +63,9 @@ val ignores = HashSetValuedHashMap<String, String>().also {
     createFile.toFile().writeText(codeGeneration)
 }
 
-private fun paresItemTemplates(project: Project, directory: File) {
+private fun paresItemTemplates(directory: File) {
     val mapper = mapper()
-    val json = Files.readString(Paths.get(project.rootDir.absolutePath, "assets", "items.json"))
+    val json = openAsset("items.json")
     val tree = mapper.readTree(json)
     val ignores = HashSetValuedHashMap<String, String>().also {
         it.put("TestItemTemplatesDataProps", "Buffs")

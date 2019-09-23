@@ -1,4 +1,4 @@
 rootProject.name = "eft-codex"
 
-include("json-model-generator")
+include("assets", "json-model-generator")
 
