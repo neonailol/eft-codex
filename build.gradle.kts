@@ -2,16 +2,22 @@ import eft.weapons.builds.parseBytes
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    id("org.jetbrains.kotlin.jvm") version "1.3.41"
+    kotlin("jvm") version "1.3.50"
+    kotlin("kapt") version "1.3.50"
     application
 }
 
 repositories {
     mavenLocal()
     jcenter()
+    maven("https://jitpack.io")
 }
 
 dependencies {
+
+    implementation(project(":json-model-generator"))
+    kapt(project(":json-model-generator"))
+
     implementation(platform("org.jetbrains.kotlin:kotlin-bom"))
     implementation(platform("com.fasterxml.jackson:jackson-bom:2.9.9"))
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")

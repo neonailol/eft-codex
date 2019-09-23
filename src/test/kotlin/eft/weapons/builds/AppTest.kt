@@ -61,4 +61,12 @@ class AppTest {
         println(stringBuilder(tree))
     }
 
+    @Test
+    fun `smallest heaviest items`() {
+        Items.all()
+            .sortedBy { it.props.creditsPrice }
+            .forEach { println("${it.id} | ${itemName(it.id)} | ${it.props.creditsPrice}") }
+
+    }
+
 }
