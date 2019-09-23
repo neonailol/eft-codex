@@ -3,7 +3,6 @@ package eft.weapons.builds
 import eft.weapons.builds.categories.ItemCategories
 import eft.weapons.builds.items.templates.TestBackendLocale
 import eft.weapons.builds.items.templates.TestItemTemplates
-import eft.weapons.builds.items.templates.TestTraders
 import eft.weapons.builds.utils.Items
 import eft.weapons.builds.utils.Locale.itemName
 import eft.weapons.builds.utils.loadBytes
@@ -20,16 +19,6 @@ class AppTest {
     @Test
     fun `can load locale`() {
         loadBytes("locale.json") as TestBackendLocale
-    }
-
-    @Test
-    fun `can load traders`() {
-        loadBytes("traders/mechanic.json") as TestTraders
-        loadBytes("traders/peacekeeper.json") as TestTraders
-        loadBytes("traders/prapor.json") as TestTraders
-        loadBytes("traders/ragman.json") as TestTraders
-        loadBytes("traders/skier.json") as TestTraders
-        loadBytes("traders/therapist.json") as TestTraders
     }
 
     @Test
