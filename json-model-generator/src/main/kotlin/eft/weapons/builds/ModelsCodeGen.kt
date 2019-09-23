@@ -37,6 +37,24 @@ fun openAsset(name: String): InputStream {
 fun parseBytes(directory: File) {
     paresItemTemplates(directory)
     parseLocale(directory)
+    parseTraders(directory)
+}
+
+fun parseTraders(directory: File) {
+    val ignores: MultiValuedMap<String, String> = HashSetValuedHashMap()
+    processAssets(
+        directory,
+        listOf(
+            "traders/mechanic.json",
+            "traders/peacekeeper.json",
+            "traders/prapor.json",
+            "traders/ragman.json",
+            "traders/skier.json",
+            "traders/therapist.json"
+        ),
+        "TestTraders",
+        ignores
+    )
 }
 
 fun parseLocale(directory: File) {
@@ -70,6 +88,24 @@ fun processAsset(directory: File, asset: String, name: String, ignores: MultiVal
     createFile.toFile().writeText(codeGeneration)
 }
 
+fun processAssets(directory: File, assets: Collection<String>, name: String, ignores: MultiValuedMap<String, String>) {
+    val mapper = mapper()
+    val context = Context(ignores)
+    for (asset in assets) {
+        val json = openAsset(asset)
+        val tree = mapper.readTree(json)
+        tree.fields().forEach {
+            val rootNode = context.addNode(Node(name, it.key, it.value, isMapNode(it.value)))
+            if (it.value.isContainerNode) {
+                putIntoContext(context, rootNode, it)
+            }
+        }
+    }
+    val codeGeneration = codeGeneration(context)
+    val createFile = Files.createFile(Paths.get(directory.absolutePath, "$name.kt"))
+    createFile.toFile().writeText(codeGeneration)
+}
+
 fun codeGeneration(context: Context): String {
     val builder = StringBuilder()
     builder.append("package eft.weapons.builds.items.templates" + System.lineSeparator())
@@ -92,14 +128,21 @@ fun codeGeneration(context: Context): String {
                 }
 
             if (props.size == 1 && props[0].mapNode) {
-                val type = if (props[0].type is TextNode) {
-                    "String"
-                } else {
-                    clazzName
+                val type = when {
+                    props[0].type is TextNode -> "String"
+                    props[0].type is IntNode -> "Int"
+                    else -> clazzName
                 }
-                builder.append("class ${clazzName}Map : HashMap<String, ${type}>() {" + System.lineSeparator())
-                builder.append("    override fun toString(): String = stringBuilder(this)" + System.lineSeparator())
-                builder.append("}" + System.lineSeparator() + System.lineSeparator())
+                if (props[0].type is ArrayNode) {
+                    builder.append("class ${clazzName}Map : ArrayList<${type}>() {" + System.lineSeparator())
+                    builder.append("    override fun toString(): String = stringBuilder(this)" + System.lineSeparator())
+                    builder.append("}" + System.lineSeparator() + System.lineSeparator())
+                } else {
+                    builder.append("class ${clazzName}Map : HashMap<String, ${type}>() {" + System.lineSeparator())
+                    builder.append("    override fun toString(): String = stringBuilder(this)" + System.lineSeparator())
+                    builder.append("}" + System.lineSeparator() + System.lineSeparator())
+                }
+
             } else {
                 builder.append("class ${clazzName} {" + System.lineSeparator())
                 props.forEachIndexed { index, node ->
@@ -186,6 +229,7 @@ fun putIntoContext(
     if (context.shouldSkip(rootNode)) {
         return
     }
+
     val isEntryMapNode = isMapNode(entry.value)
 
     entry.value.fields().forEach {
@@ -203,17 +247,20 @@ fun putIntoContext(
                 putIntoContext(context, node, it)
             } else if (it.value.isArray) {
                 it.value.iterator().forEach { child ->
-                    putIntoContext(context, node, object : Map.Entry<String, JsonNode> {
-                        override val key: String
-                            get() = node.name
-                        override val value: JsonNode
-                            get() = child
-                    })
+                    putIntoContext(context, node, MapEntry(node.name, child))
                 }
             }
         }
     }
+    if (entry.value.isArray) {
+        val node = context.addNode(Node(rootNode.prefix + "#" + "Data", "", entry.value, true))
+        entry.value.forEach {
+            putIntoContext(context, node, MapEntry(node.name, it))
+        }
+    }
 }
+
+data class MapEntry<out K, out V>(override val key: K, override val value: V) : Map.Entry<K, V>
 
 fun isMapNode(node: JsonNode): Boolean {
     return when {
