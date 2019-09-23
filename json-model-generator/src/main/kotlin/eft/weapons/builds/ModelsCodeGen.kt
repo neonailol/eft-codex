@@ -24,7 +24,6 @@ import org.apache.commons.text.WordUtils
 import java.io.File
 import java.io.InputStream
 import java.nio.file.Files
-import java.nio.file.Path
 import java.nio.file.Paths
 
 fun mapper(): ObjectMapper {
@@ -36,53 +35,42 @@ fun openAsset(name: String): InputStream {
 }
 
 fun parseBytes(directory: File) {
-    cleanGenerated(directory)
     paresItemTemplates(directory)
     parseLocale(directory)
 }
 
 fun parseLocale(directory: File) {
-    val mapper = mapper()
-    val json = openAsset("locale.json")
-    val tree = mapper.readTree(json)
-    val ignores = HashSetValuedHashMap<String, String>().also {
-        it.put("TestBackendLocaleData", "mail")
-        it.put("TestBackendLocaleData", "error")
-        it.put("TestBackendLocaleData", "interface")
-        it.put("TestBackendLocaleDataTemplates", "#_val")
-    }
-    val context = Context(ignores)
-    tree.fields().forEach {
-        val rootNode = context.addNode(Node("TestBackendLocale", it.key, it.value, isMapNode(it.value)))
-        if (it.value.isContainerNode) {
-            putIntoContext(context, rootNode, it)
-        }
-    }
-    val codeGeneration = codeGeneration(context)
-    val createFile = Files.createFile(Paths.get(directory.absolutePath, "TestBackendLocale.kt"))
-    createFile.toFile().writeText(codeGeneration)
+    val ignores: MultiValuedMap<String, String> = HashSetValuedHashMap()
+    ignores.put("TestBackendLocaleData", "mail")
+    ignores.put("TestBackendLocaleData", "error")
+    ignores.put("TestBackendLocaleData", "interface")
+    ignores.put("TestBackendLocaleDataTemplates", "#_val")
+    processAsset(directory, "locale.json", "TestBackendLocale", ignores)
 }
 
 private fun paresItemTemplates(directory: File) {
+    val ignores: MultiValuedMap<String, String> = HashSetValuedHashMap()
+    ignores.put("TestItemTemplatesDataProps", "Buffs")
+    processAsset(directory, "items.json", "TestItemTemplates", ignores)
+}
+
+fun processAsset(directory: File, asset: String, name: String, ignores: MultiValuedMap<String, String>) {
     val mapper = mapper()
-    val json = openAsset("items.json")
+    val json = openAsset(asset)
     val tree = mapper.readTree(json)
-    val ignores = HashSetValuedHashMap<String, String>().also {
-        it.put("TestItemTemplatesDataProps", "Buffs")
-    }
     val context = Context(ignores)
     tree.fields().forEach {
-        val rootNode = context.addNode(Node("TestItemTemplates", it.key, it.value, isMapNode(it.value)))
+        val rootNode = context.addNode(Node(name, it.key, it.value, isMapNode(it.value)))
         if (it.value.isContainerNode) {
             putIntoContext(context, rootNode, it)
         }
     }
     val codeGeneration = codeGeneration(context)
-    val createFile = Files.createFile(Paths.get(directory.absolutePath, "TestItemTemplates.kt"))
+    val createFile = Files.createFile(Paths.get(directory.absolutePath, "$name.kt"))
     createFile.toFile().writeText(codeGeneration)
 }
 
-public fun codeGeneration(context: Context): String {
+fun codeGeneration(context: Context): String {
     val builder = StringBuilder()
     builder.append("package eft.weapons.builds.items.templates" + System.lineSeparator())
     builder.append("import com.fasterxml.jackson.annotation.JsonProperty" + System.lineSeparator())
@@ -198,14 +186,14 @@ fun putIntoContext(
     if (context.shouldSkip(rootNode)) {
         return
     }
-    val isRootMapNode = isMapNode(entry.value)
+    val isEntryMapNode = isMapNode(entry.value)
 
     entry.value.fields().forEach {
-        val nodeName: String = when (isRootMapNode) {
+        val nodeName: String = when (isEntryMapNode) {
             true -> ""
             false -> it.key
         }
-        val isMapNode: Boolean = when (isRootMapNode) {
+        val isMapNode: Boolean = when (isEntryMapNode) {
             true -> true
             false -> isMapNode(it.value)
         }
@@ -228,22 +216,18 @@ fun putIntoContext(
 }
 
 fun isMapNode(node: JsonNode): Boolean {
-    if (node.fields().asSequence().count() > 0) {
-        if (node.fields().asSequence().all { q -> isMapIndex(q.key) }) {
-            return true
-        }
+    return when {
+        node.fields().asSequence().count() == 0 -> false
+        else -> node.fields().asSequence().all { isMapIndex(it.key) }
     }
-    return false
 }
 
 fun isMapIndex(fieldName: String): Boolean {
-    if (fieldName.length != "5b47574386f77428ca22b336".length) {
-        return false
+    return when {
+        fieldName.length != "5b47574386f77428ca22b336".length -> false
+        fieldName.matches(Regex("[a-f0-9]{24}")) -> true
+        else -> false
     }
-    if (! fieldName.matches(Regex("[a-f0-9]{24}"))) {
-        return false
-    }
-    return true
 }
 
 class Context(val ignoredFields: MultiValuedMap<String, String>) {
@@ -255,10 +239,9 @@ class Context(val ignoredFields: MultiValuedMap<String, String>) {
             return node
         }
         nodes.add(node)
-        nodes.filter { it.prefix == node.prefix && it.name == node.name }
-            .forEach {
-                it.updateType(node)
-            }
+        nodes.asSequence()
+            .filter { it.prefix == node.prefix && it.name == node.name }
+            .forEach { it.updateType(node) }
         return node
     }
 
@@ -269,8 +252,9 @@ class Context(val ignoredFields: MultiValuedMap<String, String>) {
     fun shouldSkip(rootNode: Node): Boolean {
         val className = className(rootNode.prefix)
         return ignoredFields.keys()
+            .asSequence()
             .filter { it == className }
-            .flatMap { ignoredFields.get(it) }
+            .flatMap { ignoredFields.get(it).asSequence() }
             .any { it == rootNode.name }
     }
 
@@ -316,6 +300,10 @@ data class Node(
                 type = node.type
                 return
             }
+            if (type.javaClass == IntNode::class.java && node.type.javaClass == TextNode::class.java) {
+                type = node.type
+                return
+            }
             if (type.javaClass == DoubleNode::class.java && node.type.javaClass == IntNode::class.java) {
                 return
             }
@@ -331,10 +319,6 @@ data class Node(
             if (type.javaClass == ArrayNode::class.java && node.type.javaClass == ObjectNode::class.java) {
                 return
             }
-            if (type.javaClass == IntNode::class.java && node.type.javaClass == TextNode::class.java) {
-                type = node.type
-                return
-            }
             throw RuntimeException("Unknown upgrade path from ${type.javaClass} to ${node.type.javaClass}")
         }
     }
@@ -342,9 +326,9 @@ data class Node(
     fun typeString(): String {
         return when (type.nodeType) {
             JsonNodeType.ARRAY -> "Collection"
-            JsonNodeType.BINARY -> "binary"
+            JsonNodeType.BINARY -> "Binary"
             JsonNodeType.BOOLEAN -> "Boolean"
-            JsonNodeType.MISSING -> "missing"
+            JsonNodeType.MISSING -> "Missing"
             JsonNodeType.NULL -> "Any"
 
             JsonNodeType.NUMBER -> {
@@ -361,7 +345,7 @@ data class Node(
             }
 
             JsonNodeType.OBJECT -> "Object"
-            JsonNodeType.POJO -> "pojo"
+            JsonNodeType.POJO -> "POJO"
             JsonNodeType.STRING -> "String"
         }
     }
@@ -397,17 +381,4 @@ data class Node(
             .append("type", typeString())
             .toString()
     }
-}
-
-private fun cleanGenerated(directory: File) {
-    if (directory.exists()) {
-        Files.walk(directory.toPath())
-            .sorted { o1, o2 -> o2.compareTo(o1) }
-            .map(Path::toFile)
-            .filter { it.exists() }
-            .forEach { it.delete() }
-    }
-
-    Files.createDirectories(directory.toPath())
-    Files.deleteIfExists(Paths.get(directory.absolutePath, "kode.kt"))
 }
