@@ -137,6 +137,10 @@ fun codeGeneration(context: Context): String {
                     builder.append("class $clazzName : ArrayList<${type}Array>() {" + System.lineSeparator())
                     builder.append("    override fun toString(): String = stringBuilder(this)" + System.lineSeparator())
                     builder.append("}" + System.lineSeparator() + System.lineSeparator())
+
+                    builder.append("class ${clazzName}Array : ArrayList<${type}ArrayInt>() {" + System.lineSeparator())
+                    builder.append("    override fun toString(): String = stringBuilder(this)" + System.lineSeparator())
+                    builder.append("}" + System.lineSeparator() + System.lineSeparator())
                 } else {
                     if (props[0].type is ArrayNode) {
                         builder.append("class ${clazzName}Map : HashMap<String, ${type}Data>() {" + System.lineSeparator())
@@ -258,9 +262,10 @@ fun putIntoContext(
         }
     }
     if (entry.value.isArray) {
-        val node = context.addNode(Node(rootNode.prefix + "#" + "Data", "Array", entry.value, true, true))
+        val node = context.addNode(Node(rootNode.prefix + "#" + "Data", "ArrayInt", entry.value, true, true))
+        val node1 = context.addNode(Node(node.prefix, "ArrayInt", entry.value, true, true))
         entry.value.forEach {
-            putIntoContext(context, node, MapEntry(node.name, it))
+            putIntoContext(context, node, MapEntry(node1.name, it))
         }
     }
 }
