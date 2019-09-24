@@ -10,6 +10,9 @@ object Traders {
 
         for (value in TradersData.values()) {
             val sellingItem = value.data.items.firstOrNull { it.tpl == id } ?: continue
+            if (sellingItem.parentId != "hideout") {
+                continue
+            }
             val loyalLevel = value.data.loyalLevelItems.getOrDefault(sellingItem.id, 0)
             result.add(TraderSellData(id, value, sellingItem, loyalLevel))
         }
