@@ -17,12 +17,10 @@ object Traders {
         return result
     }
 
-    private val mechanic = loadBytes("traders/mechanic.json") as TestTraders
-    private val peacekeeper = loadBytes("traders/peacekeeper.json") as TestTraders
-    private val prapor = loadBytes("traders/prapor.json") as TestTraders
-    private val ragman = loadBytes("traders/ragman.json") as TestTraders
-    private val skier = loadBytes("traders/skier.json") as TestTraders
-    private val therapist = loadBytes("traders/therapist.json") as TestTraders
+    fun itemString(id: String): String {
+        val item = item(id)
+        return item.joinToString { it.trader.name + " " + it.loyalLevel }
+    }
 
 }
 

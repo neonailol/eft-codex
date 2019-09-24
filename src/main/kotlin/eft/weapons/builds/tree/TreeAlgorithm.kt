@@ -11,6 +11,7 @@ import eft.weapons.builds.tree.ItemTreeNodeType.ROOT
 import eft.weapons.builds.utils.Items
 import eft.weapons.builds.utils.Locale
 import eft.weapons.builds.utils.Locale.itemName
+import eft.weapons.builds.utils.Traders
 import eft.weapons.builds.utils.haveParentNamed
 import eft.weapons.builds.utils.isMatters
 import eft.weapons.builds.utils.stringBuilder
@@ -18,7 +19,7 @@ import java.util.TreeSet
 import kotlin.math.roundToInt
 
 fun itemTree(weapon: TestItemTemplatesData): ItemTree {
-    return ItemTree(weapon, "", ROOT, true, children(weapon))
+    return ItemTree(weapon, "", ROOT, true, children(weapon), Traders.itemString(weapon.id))
 }
 
 fun children(item: TestItemTemplatesData): List<ItemTree> {
@@ -26,17 +27,17 @@ fun children(item: TestItemTemplatesData): List<ItemTree> {
         .filter { it.props.filters.isNotEmpty() }
         .map { it to children(it) }
         .filter { it.second.isNotEmpty() }
-        .map { ItemTree(it.first, META, it.first.required, it.second) }
+        .map { ItemTree(it.first, META, it.first.required, it.second, Traders.itemString(it.first.id)) }
 }
 
 fun children(filter: TestItemTemplatesDataPropsSlots): List<ItemTree> {
     return filter.props.filters.first().filter
         .filter { isMatters(it) }
         .map { Items[it] }
-        .map { ItemTree(it, filter.id, ITEM, false, children(it)) }
+        .map { ItemTree(it, filter.id, ITEM, false, children(it), Traders.itemString(it.id)) }
 }
 
-@JsonPropertyOrder(value = ["id", "name", "parent", "type", "required", "children"])
+@JsonPropertyOrder(value = ["id", "name", "parent", "type", "required", "trader", "children"])
 data class ItemTree(
     val id: String,
     val name: String,
@@ -46,7 +47,8 @@ data class ItemTree(
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
     val children: List<ItemTree>,
     @JsonIgnore
-    var parentTree: ItemTree? = null
+    var parentTree: ItemTree? = null,
+    val trader: String
 ) {
 
     constructor(
@@ -54,14 +56,17 @@ data class ItemTree(
         parent: String,
         type: ItemTreeNodeType,
         required: Boolean,
-        children: List<ItemTree>
+        children: List<ItemTree>,
+        trader: String
     ) : this(
         item.id,
         itemName(item.id),
         parent,
         type,
         required,
-        children
+        children,
+        null,
+        trader
     ) {
         children.forEach { it.parentTree = this }
     }
@@ -70,14 +75,17 @@ data class ItemTree(
         item: TestItemTemplatesDataPropsSlots,
         type: ItemTreeNodeType,
         required: Boolean,
-        children: List<ItemTree>
+        children: List<ItemTree>,
+        trader: String
     ) : this(
         item.id,
         item.name,
         item.parent,
         type,
         required,
-        children
+        children,
+        null,
+        trader
     ) {
         children.forEach { it.parentTree = this }
     }
