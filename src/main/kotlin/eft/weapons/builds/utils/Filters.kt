@@ -4,11 +4,7 @@ import eft.weapons.builds.items.templates.TestItemTemplatesData
 
 fun isMatters(itemId: String): Boolean {
     val item = Items[itemId]
-    if (haveParentNamed(
-            item,
-            listOf("Sights", "TacticalCombo", "Flashlight", "Magazine", "Ammo", "Launcher", "Charge")
-        )
-    ) {
+    if (haveParentNamed(item, listOf("Sights", "TacticalCombo", "Flashlight", "Magazine", "Ammo", "Launcher", "Charge"))) {
         return false
     }
     if (isScopeOrTacticalOnlyMount(item)) {
@@ -42,10 +38,7 @@ fun isScopeOrTacticalOnlyMount(item: TestItemTemplatesData): Boolean {
         .flatMap { it.filter }
         .map { Items[it] }
         .all {
-            haveParentNamed(
-                it,
-                listOf("TacticalCombo", "Flashlight", "Sights")
-            ) || isScopeOrTacticalOnlyMount(it)
+            haveParentNamed(it, listOf("TacticalCombo", "Flashlight", "Sights")) || isScopeOrTacticalOnlyMount(it)
         }
 }
 

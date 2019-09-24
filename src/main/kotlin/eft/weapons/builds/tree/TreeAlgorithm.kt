@@ -37,7 +37,7 @@ fun children(filter: TestItemTemplatesDataPropsSlots): List<ItemTree> {
         .map { ItemTree(it, filter.id, ITEM, false, children(it), Traders.itemString(it.id)) }
 }
 
-@JsonPropertyOrder(value = ["id", "name", "parent", "type", "required", "trader", "children"])
+@JsonPropertyOrder(value = ["id", "name", "parent", "type", "required", "trader", "mounts", "children"])
 data class ItemTree(
     val id: String,
     val name: String,
@@ -48,7 +48,9 @@ data class ItemTree(
     val children: List<ItemTree>,
     @JsonIgnore
     var parentTree: ItemTree? = null,
-    val trader: String
+    val trader: String,
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    var mounts: List<String>? = null
 ) {
 
     constructor(
@@ -68,7 +70,10 @@ data class ItemTree(
         null,
         trader
     ) {
-        children.forEach { it.parentTree = this }
+        children.forEach {
+            it.parentTree = this
+            it.mounts = allParentMounts(it)
+        }
     }
 
     constructor(
@@ -87,7 +92,10 @@ data class ItemTree(
         null,
         trader
     ) {
-        children.forEach { it.parentTree = this }
+        children.forEach {
+            it.parentTree = this
+            it.mounts = allParentMounts(it)
+        }
     }
 }
 
@@ -305,6 +313,7 @@ data class Foregrip(val items: List<String>) {
 fun handguards(tree: ItemTree): List<Slot> {
     val guards: MutableList<String> = mutableListOf()
     buildsHandguards(guards, tree)
+    println(stringBuilder(guards.map { itemName(it) }))
     return guards.distinct().map { Slot(setOf(it)) }
 }
 
