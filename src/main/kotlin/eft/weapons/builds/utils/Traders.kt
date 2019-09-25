@@ -22,7 +22,7 @@ object Traders {
 
     fun itemString(id: String): String {
         val item = item(id)
-        return item.joinToString { it.trader.name + " " + it.loyalLevel }
+        return item.joinToString { "${it.trader.name} ${it.loyalLevel}" }
     }
 
 }

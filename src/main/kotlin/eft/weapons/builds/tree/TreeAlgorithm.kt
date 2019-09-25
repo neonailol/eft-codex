@@ -48,9 +48,10 @@ data class ItemTree(
     val children: List<ItemTree>,
     @JsonIgnore
     var parentTree: ItemTree? = null,
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     val trader: String,
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
-    var mounts: List<String>? = null
+    var mounts: Set<String> = emptySet()
 ) {
 
     constructor(
@@ -242,8 +243,8 @@ fun buildsStocks(stocks: MutableList<Stock>, root: ItemTree) {
     }
 }
 
-fun allParentStocks(child: ItemTree): List<String> {
-    val stocks: MutableList<String> = mutableListOf()
+fun allParentStocks(child: ItemTree): Set<String> {
+    val stocks: MutableSet<String> = mutableSetOf()
     var current = child.parentTree
     while (current != null) {
         if (current.type == ITEM && haveParentNamed(Items[current.id], "Stock")) {
@@ -252,14 +253,6 @@ fun allParentStocks(child: ItemTree): List<String> {
         current = current.parentTree
     }
     return stocks
-}
-
-data class Stock(val items: List<String>) {
-
-    fun names(): List<String> {
-        return items.map { Items[it] }.map { it.name }
-    }
-
 }
 
 private fun stocks(tree: ItemTree): List<Stock> {
@@ -290,8 +283,8 @@ fun buildsForegrips(grips: MutableList<Foregrip>, root: ItemTree) {
     }
 }
 
-fun allParentMounts(child: ItemTree): List<String> {
-    val grips: MutableList<String> = mutableListOf()
+fun allParentMounts(child: ItemTree): Set<String> {
+    val grips: MutableSet<String> = mutableSetOf()
     var current = child.parentTree
     while (current != null) {
         if (current.type == ITEM && haveParentNamed(Items[current.id], "Mount")) {
@@ -302,40 +295,10 @@ fun allParentMounts(child: ItemTree): List<String> {
     return grips
 }
 
-data class Foregrip(val items: List<String>) {
-    fun names(): List<String> {
-        return items.map { Items[it] }.map { it.name }
-    }
-}
-
-fun handguards(tree: ItemTree): List<Slot> {
-    val guards: MutableList<String> = mutableListOf()
-    buildsHandguards(guards, tree)
-    return guards.distinct().map { Slot(setOf(it)) }
-}
-
-fun buildsHandguards(guard: MutableList<String>, root: ItemTree) {
-    for (child in root.children) {
-        if (child.type == ITEM && haveParentNamed(Items[child.id], "Handguard")) {
-            guard.add(child.id)
-        }
-        buildsHandguards(guard, child)
-    }
-}
-
-data class Muzzle(val items: List<String>) {
-
-    fun names(): List<String> {
-        return items.map { Items[it] }.map { it.name }
-    }
-
-}
-
 fun muzzles(tree: ItemTree): List<Muzzle> {
     val muzzles: MutableList<Muzzle> = mutableListOf()
     buildsMuzzles(muzzles, tree)
-    val completeStocks = muzzles.filter { isCompleteMuzzle(it) }
-    return completeStocks
+    return muzzles.filter { isCompleteMuzzle(it) }
 }
 
 fun buildsMuzzles(stocks: MutableList<Muzzle>, root: ItemTree) {
@@ -357,28 +320,40 @@ fun isCompleteMuzzle(muzzle: Muzzle): Boolean {
     return muzzle.items.any { Items[it].props.slots.isEmpty() }
 }
 
-fun allParentMuzzles(child: ItemTree): List<String> {
-    val stocks: MutableList<String> = mutableListOf()
+fun allParentMuzzles(child: ItemTree): Set<String> {
+    val muzzles: MutableSet<String> = mutableSetOf()
     var current = child.parentTree
     while (current != null) {
         if (current.type == ITEM && haveParentNamed(Items[current.id], "Muzzle")) {
-            stocks.add(current.id)
+            muzzles.add(current.id)
         }
         current = current.parentTree
     }
-    return stocks
+    return muzzles
 }
 
+open class CompositeAttachment(val items: Set<String>) {
+
+    fun names(): List<String> {
+        return items.map { Items[it] }.map { it.name }
+    }
+
+    override fun toString(): String = stringBuilder(this)
+}
+
+class Muzzle(items: Set<String>) : CompositeAttachment(items)
+
+class Stock(items: Set<String>) : CompositeAttachment(items)
+
+class Foregrip(items: Set<String>) : CompositeAttachment(items)
+
 fun weaponBuilds(weapon: TestItemTemplatesData) {
-    val resultWriter = draftPrinter(weapon)
     val tree = itemTree(weapon)
     println(stringBuilder(tree))
     val completeStocks = stocks(tree)
     println(stringBuilder(completeStocks.map { it.names() }))
     val completeForegrips = foregrips(tree)
     println(stringBuilder(completeForegrips.map { it.names() }))
-    val completeHandguards = handguards(tree)
-    println(stringBuilder(completeHandguards.map { it.names() }))
     val completeMuzzles = muzzles(tree)
     println(stringBuilder(completeMuzzles.map { it.names() }))
 //    val transform = transform(tree)

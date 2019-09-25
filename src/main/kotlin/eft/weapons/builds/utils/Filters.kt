@@ -13,9 +13,7 @@ fun isMatters(itemId: String): Boolean {
     return true
 }
 
-fun haveParentNamed(item: TestItemTemplatesData, excluded: String): Boolean {
-    return haveParentNamed(item, listOf(excluded))
-}
+fun haveParentNamed(item: TestItemTemplatesData, excluded: String): Boolean = haveParentNamed(item, listOf(excluded))
 
 fun haveParentNamed(item: TestItemTemplatesData, excluded: Collection<String>): Boolean {
     var parent = item.parent
@@ -41,4 +39,3 @@ fun isScopeOrTacticalOnlyMount(item: TestItemTemplatesData): Boolean {
             haveParentNamed(it, listOf("TacticalCombo", "Flashlight", "Sights")) || isScopeOrTacticalOnlyMount(it)
         }
 }
-
