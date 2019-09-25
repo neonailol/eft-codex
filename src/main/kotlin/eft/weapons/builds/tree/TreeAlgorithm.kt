@@ -266,7 +266,6 @@ private fun stocks(tree: ItemTree): List<Stock> {
     val stocks: MutableList<Stock> = mutableListOf()
     buildsStocks(stocks, tree)
     val completeStocks = stocks.filter { isCompleteStock(it) }
-    println(stringBuilder(completeStocks.map { it.names() }))
     return completeStocks
 }
 
@@ -279,7 +278,6 @@ data class Slot(val items: Set<String>) {
 fun foregrips(tree: ItemTree): List<Foregrip> {
     val grips: MutableList<Foregrip> = mutableListOf()
     buildsForegrips(grips, tree)
-    println(stringBuilder(grips.map { it.names() }))
     return grips
 }
 
@@ -313,7 +311,6 @@ data class Foregrip(val items: List<String>) {
 fun handguards(tree: ItemTree): List<Slot> {
     val guards: MutableList<String> = mutableListOf()
     buildsHandguards(guards, tree)
-    println(stringBuilder(guards.map { itemName(it) }))
     return guards.distinct().map { Slot(setOf(it)) }
 }
 
@@ -338,7 +335,6 @@ fun muzzles(tree: ItemTree): List<Muzzle> {
     val muzzles: MutableList<Muzzle> = mutableListOf()
     buildsMuzzles(muzzles, tree)
     val completeStocks = muzzles.filter { isCompleteMuzzle(it) }
-    println(stringBuilder(completeStocks.map { it.names() }))
     return completeStocks
 }
 
@@ -378,33 +374,37 @@ fun weaponBuilds(weapon: TestItemTemplatesData) {
     val tree = itemTree(weapon)
     println(stringBuilder(tree))
     val completeStocks = stocks(tree)
+    println(stringBuilder(completeStocks.map { it.names() }))
     val completeForegrips = foregrips(tree)
+    println(stringBuilder(completeForegrips.map { it.names() }))
     val completeHandguards = handguards(tree)
+    println(stringBuilder(completeHandguards.map { it.names() }))
     val completeMuzzles = muzzles(tree)
-    val transform = transform(tree)
-    println(stringBuilder(transform))
-    transform.values.forEach { set ->
-        set.removeIf { it != "EMPTY" && haveParentNamed(Items[it], "Stock") }
-        set.removeIf { it != "EMPTY" && haveParentNamed(Items[it], listOf("Mount", "Foregrip")) }
-        set.removeIf { it != "EMPTY" && haveParentNamed(Items[it], listOf("Handguard")) }
-        set.removeIf { it != "EMPTY" && haveParentNamed(Items[it], listOf("Muzzle")) }
-    }
-    val values = transform.values.toList()
-        .distinct()
-        .filter { it.isNotEmpty() }
-        .filter { ! (it.size == 1 && it.contains("EMPTY")) }
-        .toMutableList()
-    val list = values.map { v -> v.map { i -> Slot(setOf(i)) } }.toMutableList()
-    list.add(completeStocks.map { Slot(it.items.toSet()) } + Slot(setOf("EMPTY")))
-    list.add(completeForegrips.map { Slot(it.items.toSet()) } + Slot(setOf("EMPTY")))
-    list.add(completeHandguards.map { Slot(it.items.toSet()) } + Slot(setOf("EMPTY")))
-    list.add(completeMuzzles.map { Slot(it.items.toSet()) } + Slot(setOf("EMPTY")))
-    list.forEach { l ->
-        l.forEach { s ->
-            val build = WeaponBuild(weapon, s.items)
-            println("${build.modsRecoil()} - ${build.modsNames()}")
-        }
-    }
+    println(stringBuilder(completeMuzzles.map { it.names() }))
+//    val transform = transform(tree)
+//    println(stringBuilder(transform))
+//    transform.values.forEach { set ->
+//        set.removeIf { it != "EMPTY" && haveParentNamed(Items[it], "Stock") }
+//        set.removeIf { it != "EMPTY" && haveParentNamed(Items[it], listOf("Mount", "Foregrip")) }
+//        set.removeIf { it != "EMPTY" && haveParentNamed(Items[it], listOf("Handguard")) }
+//        set.removeIf { it != "EMPTY" && haveParentNamed(Items[it], listOf("Muzzle")) }
+//    }
+//    val values = transform.values.toList()
+//        .distinct()
+//        .filter { it.isNotEmpty() }
+//        .filter { ! (it.size == 1 && it.contains("EMPTY")) }
+//        .toMutableList()
+//    val list = values.map { v -> v.map { i -> Slot(setOf(i)) } }.toMutableList()
+//    list.add(completeStocks.map { Slot(it.items.toSet()) } + Slot(setOf("EMPTY")))
+//    list.add(completeForegrips.map { Slot(it.items.toSet()) } + Slot(setOf("EMPTY")))
+//    list.add(completeHandguards.map { Slot(it.items.toSet()) } + Slot(setOf("EMPTY")))
+//    list.add(completeMuzzles.map { Slot(it.items.toSet()) } + Slot(setOf("EMPTY")))
+//    list.forEach { l ->
+//        l.forEach { s ->
+//            val build = WeaponBuild(weapon, s.items)
+//            println("${build.modsRecoil()} - ${build.modsNames()}")
+//        }
+//    }
 
 //    println(stringBuilder(permutations(resultWriter, list)))
 //    resultWriter.close()
