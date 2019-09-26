@@ -14,25 +14,17 @@ class ItemCategories(
     val children: List<ItemCategories> = listOf()
 ) {
 
-    var id: String = root.id
-    var name: String = root.name
+    val id: String = root.id
+    val name: String = root.name
 }
 
 fun children(
     root: TestItemTemplatesData,
     parents: List<TestItemTemplatesData>
 ): List<ItemCategories> {
-    val children = Items.children(root.id)
-    if (children.isEmpty()) {
-        return emptyList()
-    }
-    return children.filter { parents.any { p -> p.id == it.id } }.map {
-        ItemCategories(
-            it,
-            children(
-                it,
-                parents
-            )
-        )
-    }
+    return Items.children(root.id)
+        .asSequence()
+        .filter { parents.any { parent -> parent.id == it.id } }
+        .map { ItemCategories(it, children(it, parents)) }
+        .toList()
 }

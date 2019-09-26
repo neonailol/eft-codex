@@ -1,10 +1,9 @@
 package eft.weapons.builds.utils
 
 import eft.weapons.builds.items.templates.TestTraders
-import eft.weapons.builds.items.templates.TestTradersDataItems
 
-fun itemCost(id: String): List<ItemCost> {
-    val result: MutableList<ItemCost> = mutableListOf()
+fun itemCost(id: String): List<TraderSellData> {
+    val result: MutableList<TraderSellData> = mutableListOf()
 
     for (value in Traders.values()) {
         val sellingItem = value.data.items.firstOrNull { it.tpl == id } ?: continue
@@ -15,7 +14,7 @@ fun itemCost(id: String): List<ItemCost> {
         val barter = value.data.barterScheme[sellingItem.id] ?: continue
         barter.asSequence()
             .flatMap { it.asSequence() }
-            .mapTo(result) { ItemCost(value, it.count, Locale.itemName(it.tpl), loyalLevel) }
+            .mapTo(result) { TraderSellData(value, it.count, Locale.itemName(it.tpl), loyalLevel) }
     }
 
     return result
@@ -25,7 +24,7 @@ fun itemCostString(id: String): String {
     return itemCost(id).joinToString { "${it.trader} - ${it.loyalLevel}" }
 }
 
-data class ItemCost(
+data class TraderSellData(
     val trader: Traders,
     val amount: Double,
     val currency: String,
@@ -46,14 +45,4 @@ enum class Traders(name: String) {
 
     private var content: TestTraders = loadBytes("traders/$name.json") as TestTraders
     val data = content.data
-}
-
-class TraderSellData(
-    val itemId: String,
-    val trader: Traders,
-    val sellingItem: TestTradersDataItems,
-    val loyalLevel: Int
-) {
-
-    override fun toString(): String = stringBuilder(this)
 }

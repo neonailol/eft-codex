@@ -16,7 +16,7 @@ dependencies {
     implementation(project(":assets"))
 
     implementation(platform("org.jetbrains.kotlin:kotlin-bom"))
-    implementation(platform("com.fasterxml.jackson:jackson-bom:2.9.9"))
+    implementation(platform("com.fasterxml.jackson:jackson-bom:2.10.0"))
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("com.fasterxml.jackson.module:jackson-module-parameter-names")
@@ -31,7 +31,7 @@ dependencies {
 
     testImplementation("org.jetbrains.kotlin:kotlin-test")
     testImplementation("org.jetbrains.kotlin:kotlin-test-testng")
-    testImplementation("org.hamcrest:hamcrest:2.1")
+    testImplementation("org.hamcrest:hamcrest:2.2-rc1")
 
 }
 

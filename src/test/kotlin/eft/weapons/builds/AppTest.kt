@@ -66,7 +66,6 @@ class AppTest {
         Items.all()
             .sortedBy { it.props.creditsPrice }
             .forEach { println("${it.id} | ${itemName(it.id)} | ${it.props.creditsPrice}") }
-
     }
 
 }

@@ -9,7 +9,6 @@ import eft.weapons.builds.tree.ItemTreeNodeType.ITEM
 import eft.weapons.builds.tree.ItemTreeNodeType.META
 import eft.weapons.builds.tree.ItemTreeNodeType.ROOT
 import eft.weapons.builds.utils.Items
-import eft.weapons.builds.utils.Locale
 import eft.weapons.builds.utils.Locale.itemName
 import eft.weapons.builds.utils.haveParentNamed
 import eft.weapons.builds.utils.isMatters
@@ -17,7 +16,6 @@ import eft.weapons.builds.utils.itemCostString
 import eft.weapons.builds.utils.stringBuilder
 import java.util.TreeSet
 import kotlin.collections.set
-import kotlin.math.roundToInt
 
 fun itemTree(weapon: TestItemTemplatesData): ItemTree {
     return ItemTree(weapon, "", ROOT, true, children(weapon), itemCostString(weapon.id))
@@ -220,11 +218,11 @@ data class WeaponBuild(
 
     fun modsRecoil() = mods().map { it.props.recoil }.sum()
 
-    fun totalErgo() = (weapon.props.ergonomics + modsErgo()).roundToInt()
+    fun totalErgo() = (weapon.props.ergonomics + modsErgo())
 
-    fun totalRecoil() = (weapon.props.recoilForceUp * (1 + (modsRecoil() / 100))).roundToInt()
+    fun totalRecoil() = (weapon.props.recoilForceUp * (1 + (modsRecoil() / 100)))
 
-    fun modsNames() = mods().map { Locale.itemName(it.id) }
+    fun modsNames() = mods().map { itemName(it.id) }
 
 }
 
@@ -360,50 +358,4 @@ fun weaponBuilds(weapon: TestItemTemplatesData) {
     println(stringBuilder(completeForegrips.map { it.names() }))
     val completeMuzzles = muzzles(tree)
     println(stringBuilder(completeMuzzles.map { it.names() }))
-    TODO("Conflicting Items")
-//    val transform = transform(tree)
-//    println(stringBuilder(transform))
-//    transform.values.forEach { set ->
-//        set.removeIf { it != "EMPTY" && haveParentNamed(Items[it], "Stock") }
-//        set.removeIf { it != "EMPTY" && haveParentNamed(Items[it], listOf("Mount", "Foregrip")) }
-//        set.removeIf { it != "EMPTY" && haveParentNamed(Items[it], listOf("Handguard")) }
-//        set.removeIf { it != "EMPTY" && haveParentNamed(Items[it], listOf("Muzzle")) }
-//    }
-//    val values = transform.values.toList()
-//        .distinct()
-//        .filter { it.isNotEmpty() }
-//        .filter { ! (it.size == 1 && it.contains("EMPTY")) }
-//        .toMutableList()
-//    val list = values.map { v -> v.map { i -> Slot(setOf(i)) } }.toMutableList()
-//    list.add(completeStocks.map { Slot(it.items.toSet()) } + Slot(setOf("EMPTY")))
-//    list.add(completeForegrips.map { Slot(it.items.toSet()) } + Slot(setOf("EMPTY")))
-//    list.add(completeHandguards.map { Slot(it.items.toSet()) } + Slot(setOf("EMPTY")))
-//    list.add(completeMuzzles.map { Slot(it.items.toSet()) } + Slot(setOf("EMPTY")))
-//    list.forEach { l ->
-//        l.forEach { s ->
-//            val build = WeaponBuild(weapon, s.items)
-//            println("${build.modsRecoil()} - ${build.modsNames()}")
-//        }
-//    }
-
-//    println(stringBuilder(permutations(resultWriter, list)))
-//    resultWriter.close()
-//    println(draftReader(weapon).count())
-//    val buildsPrinter = buildsPrinter(weapon)
-//    val total = draftReader(weapon).count()
-//    println("total = $total")
-//    var progress = 0
-//    draftReader(weapon).asSequence().withIndex().forEach {
-//        val newProgress = ((it.index.toDouble() / total.toDouble()) * 100).toInt()
-//        if (newProgress > progress) {
-//            progress = newProgress
-//            println("${LocalDateTime.now()} - $progress")
-//        }
-//        val slots = it.value.split(',')
-//        if (isValidBuild(weapon, slots)) {
-//            buildsPrinter.writeLine(slots)
-//        }
-//    }
-//    buildsPrinter.close()
-//    prettyPrintBuilds(weapon)
 }

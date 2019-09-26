@@ -3,6 +3,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     kotlin("jvm") version "1.3.50"
     kotlin("kapt") version "1.3.50"
+    id("com.github.ben-manes.versions") version "0.25.0"
     application
 }
 
@@ -18,9 +19,9 @@ dependencies {
     kapt(project(":json-model-generator"))
 
     implementation(platform("org.jetbrains.kotlin:kotlin-bom"))
-    implementation(platform("com.fasterxml.jackson:jackson-bom:2.9.9"))
+    implementation(platform("com.fasterxml.jackson:jackson-bom:2.10.0"))
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.2")
     implementation("org.jooq:jooq:3.12.1")
     implementation("org.xerial:sqlite-jdbc:3.28.0")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
@@ -33,7 +34,7 @@ dependencies {
     implementation("org.apache.commons:commons-text:1.8")
     testImplementation("org.jetbrains.kotlin:kotlin-test")
     testImplementation("org.jetbrains.kotlin:kotlin-test-testng")
-    testImplementation("org.hamcrest:hamcrest:2.1")
+    testImplementation("org.hamcrest:hamcrest:2.2-rc1")
 }
 
 application {
@@ -61,4 +62,10 @@ tasks {
             events("passed", "failed")
         }
     }
+
+    wrapper {
+        distributionType = Wrapper.DistributionType.ALL
+        version = "5.6.2"
+    }
 }
+

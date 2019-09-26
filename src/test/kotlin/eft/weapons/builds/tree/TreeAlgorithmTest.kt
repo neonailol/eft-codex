@@ -1,6 +1,7 @@
 package eft.weapons.builds.tree
 
 import eft.weapons.builds.utils.Items
+import eft.weapons.builds.utils.printJson
 import org.testng.annotations.Test
 
 class TreeAlgorithmTest {
@@ -27,6 +28,15 @@ class TreeAlgorithmTest {
     fun `can make all ak-74n builds`() {
         val weapon = Items["5644bd2b4bdc2d3b4c8b4572"]
         weaponBuilds(weapon)
+    }
+
+    @Test
+    fun `ergo`() {
+        Items.all().filter {
+            StrictMath.ceil(it.props.ergonomics) != it.props.ergonomics
+        }.forEach {
+            printJson(it)
+        }
     }
 
 }

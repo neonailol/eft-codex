@@ -1,6 +1,6 @@
 package eft.weapons.builds.exports.web
 
-import eft.weapons.builds.utils.ItemCost
+import eft.weapons.builds.utils.Traders
 
 class WebWeaponTree(
     val id: String,
@@ -23,16 +23,26 @@ data class WeaponMod(
     val id: String,
     val name: String,
     val shortName: String,
-    val type: ModType,
+    val type: WeaponModType,
     val recoilPercent: Double,
     val ergonomics: Double,
+    val totalRecoilPercent: Double,
+    val totalErgonomics: Double,
+    val additionalMods: Set<WeaponMod>,
     val cost: Set<ItemCost>
+)
+
+data class ItemCost(
+    val trader: Traders,
+    val amount: Double,
+    val currency: String,
+    val loyalLevel: Int
 )
 
 enum class WeaponSlotType {
     GAS_BLOCK
 }
 
-enum class ModType {
-    META, FOREGRIP, STOCK, MUZZLE, GAS_BLOCK, HANDGUARD
+enum class WeaponModType {
+    FOREGRIP, STOCK, MUZZLE, GAS_BLOCK, HANDGUARD, PISTOL_GRIP
 }

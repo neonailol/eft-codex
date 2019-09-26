@@ -1,6 +1,7 @@
 package eft.weapons.builds.utils
 
 import com.fasterxml.jackson.annotation.JsonInclude
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter
 import com.fasterxml.jackson.databind.MapperFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
@@ -13,6 +14,7 @@ object Mapper {
         .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true)
         .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true)
         .configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true)
+        .setDefaultPrettyPrinter(DefaultPrettyPrinter())
 
     operator fun invoke(): ObjectMapper {
         return mapper
