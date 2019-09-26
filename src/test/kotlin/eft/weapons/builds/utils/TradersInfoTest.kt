@@ -3,7 +3,7 @@ package eft.weapons.builds.utils
 import eft.weapons.builds.items.templates.TestTraders
 import org.testng.annotations.Test
 
-class TradersTest {
+class TradersInfoTest {
 
     @Test
     fun `can load traders`() {
@@ -17,12 +17,12 @@ class TradersTest {
 
     @Test
     fun `can find item from trader`() {
-        println(Traders.item("590c678286f77426c9660122"))
+        printJson(TradersInfo.item("590c678286f77426c9660122"))
     }
 
     @Test
     fun `can find item cost`() {
-        println(Traders.itemCost("5644bd2b4bdc2d3b4c8b4572"))
+        printJson(TradersInfo.itemCost("5644bd2b4bdc2d3b4c8b4572"))
     }
 
 }

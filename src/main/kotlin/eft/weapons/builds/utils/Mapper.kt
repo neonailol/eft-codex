@@ -28,3 +28,7 @@ fun stringBuilder(any: Any): String {
         .writerWithDefaultPrettyPrinter()
         .writeValueAsString(any)
 }
+
+fun printJson(any: Any) {
+    println(stringBuilder(any))
+}
