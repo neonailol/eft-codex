@@ -5,38 +5,22 @@ import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonPropertyOrder
 import eft.weapons.builds.items.templates.TestItemTemplatesData
 import eft.weapons.builds.items.templates.TestItemTemplatesDataPropsSlots
-import eft.weapons.builds.tree.ItemTreeNodeType.*
-import eft.weapons.builds.utils.*
+import eft.weapons.builds.tree.ItemTreeNodeType.ITEM
+import eft.weapons.builds.tree.ItemTreeNodeType.META
+import eft.weapons.builds.tree.ItemTreeNodeType.ROOT
+import eft.weapons.builds.utils.Items
 import eft.weapons.builds.utils.Locale
 import eft.weapons.builds.utils.Locale.itemName
-import java.util.*
-import kotlin.collections.ArrayList
-import kotlin.collections.Collection
-import kotlin.collections.HashMap
-import kotlin.collections.List
-import kotlin.collections.MutableList
-import kotlin.collections.MutableMap
-import kotlin.collections.MutableSet
-import kotlin.collections.Set
-import kotlin.collections.all
-import kotlin.collections.any
-import kotlin.collections.asSequence
-import kotlin.collections.emptySet
-import kotlin.collections.filter
-import kotlin.collections.first
-import kotlin.collections.forEach
-import kotlin.collections.isNotEmpty
-import kotlin.collections.map
-import kotlin.collections.mutableListOf
-import kotlin.collections.mutableSetOf
-import kotlin.collections.plus
+import eft.weapons.builds.utils.haveParentNamed
+import eft.weapons.builds.utils.isMatters
+import eft.weapons.builds.utils.itemCostString
+import eft.weapons.builds.utils.stringBuilder
+import java.util.TreeSet
 import kotlin.collections.set
-import kotlin.collections.sortedBy
-import kotlin.collections.sum
 import kotlin.math.roundToInt
 
 fun itemTree(weapon: TestItemTemplatesData): ItemTree {
-    return ItemTree(weapon, "", ROOT, true, children(weapon), TradersInfo.itemString(weapon.id))
+    return ItemTree(weapon, "", ROOT, true, children(weapon), itemCostString(weapon.id))
 }
 
 fun children(item: TestItemTemplatesData): List<ItemTree> {
@@ -44,14 +28,14 @@ fun children(item: TestItemTemplatesData): List<ItemTree> {
         .filter { it.props.filters.isNotEmpty() }
         .map { it to children(it) }
         .filter { it.second.isNotEmpty() }
-        .map { ItemTree(it.first, META, it.first.required, it.second, TradersInfo.itemString(it.first.id)) }
+        .map { ItemTree(it.first, META, it.first.required, it.second, itemCostString(it.first.id)) }
 }
 
 fun children(filter: TestItemTemplatesDataPropsSlots): List<ItemTree> {
     return filter.props.filters.first().filter
         .filter { isMatters(it) }
         .map { Items[it] }
-        .map { ItemTree(it, filter.id, ITEM, false, children(it), TradersInfo.itemString(it.id)) }
+        .map { ItemTree(it, filter.id, ITEM, false, children(it), itemCostString(it.id)) }
 }
 
 @JsonPropertyOrder(value = ["id", "name", "parent", "type", "required", "trader", "mounts", "children"])
@@ -68,7 +52,9 @@ data class ItemTree(
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
     val trader: String,
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
-    var mounts: Set<String> = emptySet()
+    var mounts: Set<String> = emptySet(),
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    val conflicts: Set<String> = emptySet()
 ) {
 
     constructor(
@@ -86,7 +72,8 @@ data class ItemTree(
         required,
         children,
         null,
-        trader
+        trader,
+        item.props.conflictingItems.toSet()
     ) {
         children.forEach {
             it.parentTree = this
@@ -373,6 +360,7 @@ fun weaponBuilds(weapon: TestItemTemplatesData) {
     println(stringBuilder(completeForegrips.map { it.names() }))
     val completeMuzzles = muzzles(tree)
     println(stringBuilder(completeMuzzles.map { it.names() }))
+    TODO("Conflicting Items")
 //    val transform = transform(tree)
 //    println(stringBuilder(transform))
 //    transform.values.forEach { set ->

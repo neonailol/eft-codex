@@ -16,13 +16,8 @@ class TradersInfoTest {
     }
 
     @Test
-    fun `can find item from trader`() {
-        printJson(TradersInfo.item("590c678286f77426c9660122"))
-    }
-
-    @Test
     fun `can find item cost`() {
-        printJson(TradersInfo.itemCost("5644bd2b4bdc2d3b4c8b4572"))
+        printJson(itemCost("5644bd2b4bdc2d3b4c8b4572"))
     }
 
 }

@@ -4,7 +4,7 @@ import eft.weapons.builds.items.templates.TestBackendLocale
 
 object Locale {
 
-    private var locale: TestBackendLocale = loadBytes("locale.json")
+    private val locale: TestBackendLocale = loadBytes("locale.json")
     private val alternate: MutableMap<String, String> = HashMap()
 
     init {
@@ -20,4 +20,5 @@ object Locale {
         val itemName = alternate.getOrDefault(id, locale.data.templates[id]?.shortName) ?: id
         return itemName.replace('\n', ' ')
     }
+
 }
