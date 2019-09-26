@@ -2,20 +2,7 @@ package eft.weapons.builds
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.node.ArrayNode
-import com.fasterxml.jackson.databind.node.BigIntegerNode
-import com.fasterxml.jackson.databind.node.ContainerNode
-import com.fasterxml.jackson.databind.node.DecimalNode
-import com.fasterxml.jackson.databind.node.DoubleNode
-import com.fasterxml.jackson.databind.node.FloatNode
-import com.fasterxml.jackson.databind.node.IntNode
-import com.fasterxml.jackson.databind.node.JsonNodeType
-import com.fasterxml.jackson.databind.node.LongNode
-import com.fasterxml.jackson.databind.node.NullNode
-import com.fasterxml.jackson.databind.node.NumericNode
-import com.fasterxml.jackson.databind.node.ObjectNode
-import com.fasterxml.jackson.databind.node.ShortNode
-import com.fasterxml.jackson.databind.node.TextNode
+import com.fasterxml.jackson.databind.node.*
 import org.apache.commons.collections4.MultiValuedMap
 import org.apache.commons.collections4.multimap.HashSetValuedHashMap
 import org.apache.commons.lang3.builder.ToStringBuilder
@@ -405,6 +392,7 @@ data class Node(
             JsonNodeType.OBJECT -> "Object"
             JsonNodeType.POJO -> "POJO"
             JsonNodeType.STRING -> "String"
+            null -> throw RuntimeException("Node type is null")
         }
     }
 

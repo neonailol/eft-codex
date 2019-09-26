@@ -25,7 +25,34 @@ object Traders {
         return item.joinToString { "${it.trader.name} ${it.loyalLevel}" }
     }
 
+    fun itemCost(id: String): List<ItemCost> {
+        val result: MutableList<ItemCost> = mutableListOf()
+
+        for (value in TradersData.values()) {
+            val sellingItem = value.data.items.firstOrNull { it.tpl == id } ?: continue
+            if (sellingItem.parentId != "hideout") {
+                continue
+            }
+            val loyalLevel = value.data.loyalLevelItems.getOrDefault(sellingItem.id, 0)
+            val barter = value.data.barterScheme[sellingItem.id] ?: continue
+            for (barterData in barter) {
+                for (barterDatum in barterData) {
+                    result.add(ItemCost(barterDatum.count, Locale.itemName(barterDatum.tpl), value, loyalLevel))
+                }
+            }
+        }
+
+        return result
+    }
+
 }
+
+data class ItemCost(
+        val amount: Double,
+        val currency: String,
+        val trader: TradersData,
+        val loyalLevel: Int
+)
 
 enum class TradersData(name: String) {
 
