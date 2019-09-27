@@ -7,7 +7,7 @@ import eft.weapons.builds.utils.Traders
 class WebWeaponTree(
     val id: String,
     val name: String,
-    val cost: Set<ItemCost>,
+    val cost: Set<ItemCostOffer>,
     val recoil: Int,
     val ergonomics: Double,
     val slots: Set<WeaponSlot>
@@ -44,22 +44,27 @@ data class WeaponMod(
     val totalRecoilPercent: Double,
     val totalErgonomics: Double,
     val additionalMods: Set<WeaponMod>,
-    val cost: Set<ItemCost>,
+    val cost: Set<ItemCostOffer>,
     val slots: Set<WeaponSlot>
 )
 
-@JsonPropertyOrder("trader", "amount", "currency", "loyaltyLevel")
-data class ItemCost(
+@JsonPropertyOrder("trader", "loyaltyLevel", "barter")
+data class ItemCostOffer(
     val trader: Traders,
+    val loyalLevel: Int,
+    val barter: Set<ItemCost>
+)
+
+@JsonPropertyOrder("amount", "currency")
+data class ItemCost(
     val amount: Double,
-    val currency: String,
-    val loyalLevel: Int
+    val currency: String
 )
 
 enum class WeaponSlotType {
-    SLOT_GAS_BLOCK, SLOT_MUZZLE, SLOT_PISTOL_GRIP, SLOT_STOCK
+    SLOT_GAS_BLOCK, SLOT_MUZZLE, SLOT_PISTOL_GRIP, SLOT_STOCK, SLOT_HANDGUARD, SLOT_MOUNT, SLOT_FOREGRIP
 }
 
 enum class WeaponModType {
-    FOREGRIP, STOCK, MUZZLE, GAS_BLOCK, HANDGUARD, PISTOL_GRIP
+    FOREGRIP, STOCK, MUZZLE, GAS_BLOCK, HANDGUARD, PISTOL_GRIP, MOUNT
 }

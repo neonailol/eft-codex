@@ -6,6 +6,7 @@ import eft.weapons.builds.tree.ItemTreeNodeType
 import eft.weapons.builds.utils.Items
 import eft.weapons.builds.utils.Locale.itemName
 import eft.weapons.builds.utils.Locale.itemShortName
+import eft.weapons.builds.utils.TraderSellData
 import eft.weapons.builds.utils.haveParentNamed
 import eft.weapons.builds.utils.itemCost
 
@@ -48,7 +49,7 @@ fun childrenMods(tree: ItemTree): Set<WeaponMod> {
             totalErgonomics = 0.0,
             additionalMods = setOf(),
             cost = generateItemCost(it),
-            slots = emptySet()
+            slots = mainSlots(it)
         )
     }.toSet()
 }
@@ -66,6 +67,15 @@ fun weaponModType(mod: TestItemTemplatesData): WeaponModType {
     if (haveParentNamed(mod, "Stock")) {
         return WeaponModType.STOCK
     }
+    if (haveParentNamed(mod, "Handguard")) {
+        return WeaponModType.HANDGUARD
+    }
+    if (haveParentNamed(mod, "Mount")) {
+        return WeaponModType.MOUNT
+    }
+    if (haveParentNamed(mod, "Foregrip")) {
+        return WeaponModType.MOUNT
+    }
     throw RuntimeException("Unknown mapping for mod type: ${mod.name}")
 }
 
@@ -79,9 +89,18 @@ fun slotType(slot: ItemTree): WeaponSlotType {
         "mod_muzzle" -> WeaponSlotType.SLOT_MUZZLE
         "mod_pistol_grip" -> WeaponSlotType.SLOT_PISTOL_GRIP
         "mod_stock" -> WeaponSlotType.SLOT_STOCK
+        "mod_stock_000" -> WeaponSlotType.SLOT_STOCK
+        "mod_handguard" -> WeaponSlotType.SLOT_HANDGUARD
+        "mod_mount_000" -> WeaponSlotType.SLOT_MOUNT
+        "mod_mount_002" -> WeaponSlotType.SLOT_MOUNT
+        "mod_mount_003" -> WeaponSlotType.SLOT_MOUNT
+        "mod_foregrip" -> WeaponSlotType.SLOT_FOREGRIP
         else -> throw RuntimeException("Unknown mapping for slot type: ${slot.name}")
     }
 }
 
-private fun generateItemCost(tree: ItemTree) =
-    itemCost(tree.id).map { ItemCost(it.trader, it.amount, it.currency, it.loyalLevel) }.toSet()
+private fun generateItemCost(tree: ItemTree) = itemCost(tree.id).map { itemCostOffer(it) }.toSet()
+
+private fun itemCostOffer(it: TraderSellData) = ItemCostOffer(it.trader, it.loyalLevel, barter(it))
+
+private fun barter(it: TraderSellData) = it.barter.map { ic -> ItemCost(ic.amount, ic.currency) }.toSet()

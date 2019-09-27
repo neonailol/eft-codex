@@ -12,9 +12,13 @@ fun itemCost(id: String): List<TraderSellData> {
         }
         val loyalLevel = value.data.loyalLevelItems.getOrDefault(sellingItem.id, 0)
         val barter = value.data.barterScheme[sellingItem.id] ?: continue
-        barter.asSequence()
-            .flatMap { it.asSequence() }
-            .mapTo(result) { TraderSellData(value, it.count, Locale.itemName(it.tpl), loyalLevel) }
+        for (barterItem in barter) {
+            val traderSellDataBarter: MutableSet<TraderSellDataBarter> = mutableSetOf()
+            for (bi in barterItem) {
+                traderSellDataBarter.add(TraderSellDataBarter(bi.count, Locale.itemName(bi.tpl)))
+            }
+            result.add(TraderSellData(value, loyalLevel, traderSellDataBarter))
+        }
     }
 
     return result
@@ -26,13 +30,17 @@ fun itemCostString(id: String): String {
 
 data class TraderSellData(
     val trader: Traders,
-    val amount: Double,
-    val currency: String,
-    val loyalLevel: Int
+    val loyalLevel: Int,
+    val barter: Set<TraderSellDataBarter>
 ) {
 
     override fun toString(): String = stringBuilder(this)
 }
+
+data class TraderSellDataBarter(
+    val amount: Double,
+    val currency: String
+)
 
 enum class Traders(name: String) {
 
