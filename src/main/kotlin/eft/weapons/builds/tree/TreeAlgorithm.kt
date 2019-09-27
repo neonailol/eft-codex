@@ -349,13 +349,14 @@ class Stock(items: Set<String>) : CompositeAttachment(items)
 
 class Foregrip(items: Set<String>) : CompositeAttachment(items)
 
-fun weaponBuilds(weapon: TestItemTemplatesData) {
+fun weaponBuilds(weapon: TestItemTemplatesData): ItemTree {
     val tree = itemTree(weapon)
-    println(stringBuilder(tree))
+//    println(stringBuilder(tree))
     val completeStocks = stocks(tree)
-    println(stringBuilder(completeStocks.map { it.names() }))
+//    println(stringBuilder(completeStocks.map { it.names() }))
     val completeForegrips = foregrips(tree)
-    println(stringBuilder(completeForegrips.map { it.names() }))
+//    println(stringBuilder(completeForegrips.map { it.names() }))
     val completeMuzzles = muzzles(tree)
-    println(stringBuilder(completeMuzzles.map { it.names() }))
+//    println(stringBuilder(completeMuzzles.map { it.names() }))
+    return tree
 }
