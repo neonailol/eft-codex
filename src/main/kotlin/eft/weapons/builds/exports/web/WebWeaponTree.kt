@@ -13,13 +13,12 @@ class WebWeaponTree(
     val slots: Set<WeaponSlot>
 )
 
-@JsonPropertyOrder("name", "required", "type", "slots", "mods")
+@JsonPropertyOrder("type", "required", "mods", "slots")
 data class WeaponSlot(
-    val name: String,
-    val required: Boolean,
     val type: WeaponSlotType,
-    val slots: Set<WeaponSlot>,
-    val mods: Set<WeaponMod>
+    val required: Boolean,
+    val mods: Set<WeaponMod>,
+    val slots: Set<WeaponSlot>
 )
 
 @JsonPropertyOrder(
@@ -32,7 +31,8 @@ data class WeaponSlot(
     "totalRecoilPercent",
     "totalErgonomics",
     "additionalMods",
-    "cost"
+    "cost",
+    "slots"
 )
 data class WeaponMod(
     val id: String,
@@ -44,7 +44,8 @@ data class WeaponMod(
     val totalRecoilPercent: Double,
     val totalErgonomics: Double,
     val additionalMods: Set<WeaponMod>,
-    val cost: Set<ItemCost>
+    val cost: Set<ItemCost>,
+    val slots: Set<WeaponSlot>
 )
 
 @JsonPropertyOrder("trader", "amount", "currency", "loyaltyLevel")
@@ -56,7 +57,7 @@ data class ItemCost(
 )
 
 enum class WeaponSlotType {
-    GAS_BLOCK
+    SLOT_GAS_BLOCK, SLOT_MUZZLE, SLOT_PISTOL_GRIP, SLOT_STOCK
 }
 
 enum class WeaponModType {
