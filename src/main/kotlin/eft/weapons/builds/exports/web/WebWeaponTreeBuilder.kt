@@ -90,7 +90,7 @@ fun weaponModType(mod: TestItemTemplatesData): WeaponModType {
         return WeaponModType.MOUNT
     }
     if (haveParentNamed(mod, "Foregrip")) {
-        return WeaponModType.MOUNT
+        return WeaponModType.FOREGRIP
     }
     throw RuntimeException("Unknown mapping for mod type: ${mod.name}")
 }
