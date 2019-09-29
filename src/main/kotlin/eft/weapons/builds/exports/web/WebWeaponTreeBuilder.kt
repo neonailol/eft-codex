@@ -18,7 +18,8 @@ fun processTree(tree: ItemTree): WebWeaponTree {
         cost = generateItemCost(tree),
         recoil = item.props.recoilForceUp,
         ergonomics = item.props.ergonomics,
-        slots = mainSlots(tree)
+        slots = mainSlots(tree),
+        items = items(tree)
     )
 }
 
@@ -43,15 +44,30 @@ fun childrenMods(tree: ItemTree): Set<WeaponMod> {
             name = itemName(it.id),
             shortName = itemShortName(it.id),
             type = weaponModType(item),
-            recoilPercent = item.props.recoil,
-            ergonomics = item.props.ergonomics,
-            totalRecoilPercent = 0.0,
-            totalErgonomics = 0.0,
-            additionalMods = setOf(),
-            cost = generateItemCost(it),
             slots = mainSlots(it)
         )
     }.toSet()
+}
+
+fun items(tree: ItemTree): Set<WebItem> {
+
+    val items: MutableSet<WebItem> = mutableSetOf()
+    for (child in tree.children) {
+        items.addAll(items(child))
+    }
+
+    return items + tree.children.filter { it.type == ItemTreeNodeType.ITEM }.map {
+        val item = Items[it.id]
+        WebItem(
+            id = it.id,
+            name = itemName(it.id),
+            shortName = itemShortName(it.id),
+            type = weaponModType(item),
+            recoilPercent = item.props.recoil,
+            ergonomics = item.props.ergonomics,
+            cost = generateItemCost(it)
+        )
+    }.sortedBy { it.type }.toSet()
 }
 
 fun weaponModType(mod: TestItemTemplatesData): WeaponModType {

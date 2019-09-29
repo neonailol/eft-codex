@@ -1,5 +1,6 @@
 package eft.weapons.builds.exports.web
 
+import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonPropertyOrder
 import eft.weapons.builds.utils.Traders
 
@@ -7,45 +8,45 @@ import eft.weapons.builds.utils.Traders
 class WebWeaponTree(
     val id: String,
     val name: String,
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     val cost: Set<ItemCostOffer>,
     val recoil: Int,
     val ergonomics: Double,
-    val slots: Set<WeaponSlot>
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    val slots: Set<WeaponSlot>,
+    val items: Set<WebItem>
 )
 
 @JsonPropertyOrder("type", "required", "mods", "slots")
 data class WeaponSlot(
     val type: WeaponSlotType,
     val required: Boolean,
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     val mods: Set<WeaponMod>,
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     val slots: Set<WeaponSlot>
 )
 
-@JsonPropertyOrder(
-    "id",
-    "name",
-    "shortName",
-    "type",
-    "recoilPercent",
-    "ergonomics",
-    "totalRecoilPercent",
-    "totalErgonomics",
-    "additionalMods",
-    "cost",
-    "slots"
-)
+@JsonPropertyOrder("id", "type", "name", "shortName", "slots")
 data class WeaponMod(
+    val id: String,
+    val type: WeaponModType,
+    val name: String,
+    val shortName: String,
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    val slots: Set<WeaponSlot>
+)
+
+@JsonPropertyOrder("id", "name", "shortName", "type", "recoilPercent", "ergonomics", "cost")
+data class WebItem(
     val id: String,
     val name: String,
     val shortName: String,
     val type: WeaponModType,
     val recoilPercent: Double,
     val ergonomics: Double,
-    val totalRecoilPercent: Double,
-    val totalErgonomics: Double,
-    val additionalMods: Set<WeaponMod>,
-    val cost: Set<ItemCostOffer>,
-    val slots: Set<WeaponSlot>
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    val cost: Set<ItemCostOffer>
 )
 
 @JsonPropertyOrder("trader", "loyaltyLevel", "barter")
