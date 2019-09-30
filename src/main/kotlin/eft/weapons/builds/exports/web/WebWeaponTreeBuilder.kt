@@ -92,6 +92,18 @@ fun weaponModType(mod: TestItemTemplatesData): WeaponModType {
     if (haveParentNamed(mod, "Foregrip")) {
         return WeaponModType.FOREGRIP
     }
+    if (haveParentNamed(mod, "Barrel")) {
+        return WeaponModType.BARREL
+    }
+    if (haveParentNamed(mod, "Receiver")) {
+        return WeaponModType.RECEIVER
+    }
+    if (haveParentNamed(mod, "AuxiliaryMod")) {
+        return WeaponModType.AUXILIARY
+    }
+    if (haveParentNamed(mod, "Bipod")) {
+        return WeaponModType.BIPOD
+    }
     throw RuntimeException("Unknown mapping for mod type: ${mod.name}")
 }
 
@@ -104,13 +116,24 @@ fun slotType(slot: ItemTree): WeaponSlotType {
         "mod_gas_block" -> WeaponSlotType.SLOT_GAS_BLOCK
         "mod_muzzle" -> WeaponSlotType.SLOT_MUZZLE
         "mod_pistol_grip" -> WeaponSlotType.SLOT_PISTOL_GRIP
+        "mod_pistol_grip_akms" -> WeaponSlotType.SLOT_PISTOL_GRIP
+        "mod_pistolgrip" -> WeaponSlotType.SLOT_PISTOL_GRIP
         "mod_stock" -> WeaponSlotType.SLOT_STOCK
         "mod_stock_000" -> WeaponSlotType.SLOT_STOCK
+        "mod_stock_001" -> WeaponSlotType.SLOT_STOCK
+        "mod_stock_akms" -> WeaponSlotType.SLOT_STOCK
         "mod_handguard" -> WeaponSlotType.SLOT_HANDGUARD
+        "mod_mount" -> WeaponSlotType.SLOT_MOUNT
         "mod_mount_000" -> WeaponSlotType.SLOT_MOUNT
+        "mod_mount_001" -> WeaponSlotType.SLOT_MOUNT
         "mod_mount_002" -> WeaponSlotType.SLOT_MOUNT
         "mod_mount_003" -> WeaponSlotType.SLOT_MOUNT
         "mod_foregrip" -> WeaponSlotType.SLOT_FOREGRIP
+        "mod_barrel" -> WeaponSlotType.SLOT_BARREL
+        "mod_reciever" -> WeaponSlotType.SLOT_RECEIVER
+        "mod_scope" -> WeaponSlotType.SLOT_SCOPE
+        "mod_bipod" -> WeaponSlotType.SLOT_BIPOD
+        "mod_tactical" -> WeaponSlotType.SLOT_TACTICAL
         else -> throw RuntimeException("Unknown mapping for slot type: ${slot.name}")
     }
 }

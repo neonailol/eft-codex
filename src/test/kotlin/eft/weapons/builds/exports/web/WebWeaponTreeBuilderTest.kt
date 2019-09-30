@@ -18,4 +18,18 @@ class WebWeaponTreeBuilderTest {
         tempFile.writeText(stringBuilder(weaponTree))
         println(tempFile.absolutePath)
     }
+
+    @Test
+    fun `can export all weapons`() {
+        val weaponTypes = Items.all().filter { it.parent == "5422acb9af1c889c16000029" }
+        for (weaponType in weaponTypes) {
+            println("Exporting ${weaponType.name}")
+            val weapons = Items.all().filter { it.parent == weaponType.id }
+            for (weapon in weapons) {
+                val itemTree = weaponBuilds(weapon)
+                val weaponTree = processTree(itemTree)
+//                printJson(weaponTree)
+            }
+        }
+    }
 }
