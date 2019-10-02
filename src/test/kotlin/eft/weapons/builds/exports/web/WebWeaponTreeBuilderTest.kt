@@ -43,4 +43,18 @@ class WebWeaponTreeBuilderTest {
         }
         println(tempDir.absoluteFile)
     }
+
+    @Test
+    fun `can export weapons list`() {
+        val weaponTypes = Items.all().filter { it.parent == "5422acb9af1c889c16000029" }
+        val items: MutableList<WebWeaponListEntry> = mutableListOf()
+        for (weaponType in weaponTypes) {
+            val categoryName = itemName(weaponType.id).split(' ').joinToString("") { it.capitalize() }
+            val weapons = Items.all().filter { it.parent == weaponType.id }
+            for (weapon in weapons) {
+                items.add(WebWeaponListEntry(weapon.id, categoryName, itemName(weapon.id)))
+            }
+        }
+        printJson(items)
+    }
 }

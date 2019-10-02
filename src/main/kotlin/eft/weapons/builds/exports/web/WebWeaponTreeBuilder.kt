@@ -40,10 +40,7 @@ fun childrenMods(tree: ItemTree): Set<WeaponMod> {
     return tree.children.filter { it.type == ItemTreeNodeType.ITEM }.map {
         val item = Items[it.id]
         WeaponMod(
-            id = it.id,
-            name = itemName(it.id),
-            shortName = itemShortName(it.id),
-            type = weaponModType(item),
+            itemId = it.id,
             slots = mainSlots(it)
         )
     }.toSet()

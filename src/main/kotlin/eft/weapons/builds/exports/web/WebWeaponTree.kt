@@ -3,6 +3,7 @@ package eft.weapons.builds.exports.web
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonPropertyOrder
 import eft.weapons.builds.utils.Traders
+import java.util.UUID
 
 @JsonPropertyOrder("id", "name", "cost", "recoil", "ergonomics", "slots")
 class WebWeaponTree(
@@ -17,8 +18,9 @@ class WebWeaponTree(
     val items: Set<WebItem>
 )
 
-@JsonPropertyOrder("type", "required", "mods", "slots")
+@JsonPropertyOrder("id", "type", "required", "mods", "slots")
 data class WeaponSlot(
+    val id: UUID = UUID.randomUUID(),
     val type: WeaponSlotType,
     val required: Boolean,
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
@@ -27,12 +29,10 @@ data class WeaponSlot(
     val slots: Set<WeaponSlot>
 )
 
-@JsonPropertyOrder("id", "type", "name", "shortName", "slots")
+@JsonPropertyOrder("id", "itemId", "slots")
 data class WeaponMod(
-    val id: String,
-    val type: WeaponModType,
-    val name: String,
-    val shortName: String,
+    val id: UUID = UUID.randomUUID(),
+    val itemId: String,
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
     val slots: Set<WeaponSlot>
 )
@@ -69,3 +69,10 @@ enum class WeaponSlotType {
 enum class WeaponModType {
     FOREGRIP, STOCK, MUZZLE, GAS_BLOCK, HANDGUARD, PISTOL_GRIP, MOUNT, BARREL, RECEIVER, AUXILIARY, BIPOD
 }
+
+@JsonPropertyOrder("id", "category", "name")
+data class WebWeaponListEntry(
+    val id: String,
+    val category: String,
+    val name: String
+)
